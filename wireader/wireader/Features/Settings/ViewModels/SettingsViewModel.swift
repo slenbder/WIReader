@@ -1,8 +1,19 @@
 import Foundation
 
+// @AppStorage is SwiftUI-only and incompatible with @Observable — use UserDefaults directly
 @Observable
 final class SettingsViewModel {
-    @AppStorage("selectedThemeId") var selectedThemeId: String = "light"
-    @AppStorage("fontSize") var fontSize: Double = 18
-    @AppStorage("lineSpacing") var lineSpacing: Double = 1.4
+    var selectedThemeId: String = UserDefaults.standard.string(forKey: "selectedThemeId") ?? "light" {
+        didSet { UserDefaults.standard.set(selectedThemeId, forKey: "selectedThemeId") }
+    }
+    var fontSize: Double = {
+        let v = UserDefaults.standard.double(forKey: "fontSize"); return v == 0 ? 18 : v
+    }() {
+        didSet { UserDefaults.standard.set(fontSize, forKey: "fontSize") }
+    }
+    var lineSpacing: Double = {
+        let v = UserDefaults.standard.double(forKey: "lineSpacing"); return v == 0 ? 1.4 : v
+    }() {
+        didSet { UserDefaults.standard.set(lineSpacing, forKey: "lineSpacing") }
+    }
 }

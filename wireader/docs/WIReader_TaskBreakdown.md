@@ -23,7 +23,7 @@
 
 ## Phase 0 — Setup проекта
 
-### [ ] 0.1 — Xcode проект
+### [x] 0.1 — Xcode проект
 **Что делаем:** создаём проект, настраиваем базовые параметры.
 **Требования:**
 - iOS 17.0 минимум
@@ -32,7 +32,7 @@
 - Interface: SwiftUI, Language: Swift
 **Готово когда:** проект собирается, запускается пустой экран на симуляторе.
 
-### [ ] 0.2 — Capabilities и entitlements
+### [x] 0.2 — Capabilities и entitlements
 **Что делаем:** включаем нужные возможности в Signing & Capabilities.
 **Требования:**
 - iCloud → CloudKit (создать контейнер `iCloud.{bundleID}`)
@@ -41,14 +41,14 @@
 - App Groups (на будущее для виджета) — `group.{bundleID}`
 **Готово когда:** entitlements-файл содержит все capabilities, проект собирается с подписью.
 
-### [ ] 0.3 — Структура папок + ZIPFoundation
+### [x] 0.3 — Структура папок + ZIPFoundation
 **Что делаем:** создаём структуру папок из архитектуры, добавляем единственную зависимость.
 **Требования:**
 - Папки: Core, Data, Services, Features, Resources (по дереву из Architecture §11)
 - Swift Package Manager → добавить ZIPFoundation
 **Готово когда:** структура папок создана, ZIPFoundation импортируется без ошибок.
 
-### [ ] 0.4 — Core слой
+### [x] 0.4 — Core слой
 **Что делаем:** базовые расширения, константы, утилиты.
 **Файлы:** `Color+Hex.swift`, `Date+Relative.swift`, `View+If.swift`, `AppConstants.swift`, `APIConstants.swift`, `AppLogger.swift`, `ErrorTypes.swift`
 **Требования:**
