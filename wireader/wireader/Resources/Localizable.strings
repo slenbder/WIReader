@@ -1,0 +1,13 @@
+/* WIReader Localization */
+
+"library.title" = "Библиотека";
+"statistics.title" = "Статистика";
+"settings.title" = "Настройки";
+"reader.who_is" = "Кто это?";
+"reader.chapter_summary" = "Саммари главы";
+"reader.bookmark_add" = "Добавить закладку";
+"reader.note_add" = "Добавить заметку";
+"onboarding.welcome" = "Добро пожаловать в WIReader";
+"onboarding.start" = "Начать";
+"subscription.premium_active" = "Premium активен";
+"subscription.restore" = "Восстановить покупки";

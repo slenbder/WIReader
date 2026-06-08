@@ -1,23 +1,31 @@
-//
-//  wireaderApp.swift
-//  wireader
-//
-//  Created by Кирилл Марьясов on 6/9/26.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
 struct wireaderApp: App {
+    @State private var appState = AppState()
+
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
+        let syncedSchema = Schema([
+            Book.self, ReadingProgress.self, Bookmark.self,
+            Note.self, ReadingSession.self, ReadingGoal.self,
+            BookCollection.self, ChapterSummary.self
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let localSchema = Schema([AIChunk.self])
+
+        let syncedConfig = ModelConfiguration(
+            "Synced",
+            schema: syncedSchema,
+            cloudKitDatabase: .none
+        )
+        let localConfig = ModelConfiguration(
+            "Local",
+            schema: localSchema,
+            cloudKitDatabase: .none
+        )
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(for: syncedSchema, configurations: [syncedConfig, localConfig])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -25,7 +33,13 @@ struct wireaderApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if appState.isOnboardingComplete {
+                MainTabView()
+                    .environment(appState)
+            } else {
+                OnboardingView()
+                    .environment(appState)
+            }
         }
         .modelContainer(sharedModelContainer)
     }
