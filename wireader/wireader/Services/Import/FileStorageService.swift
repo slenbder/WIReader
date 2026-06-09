@@ -1,25 +1,62 @@
 import Foundation
+import Observation
+import OSLog
 
+@MainActor
+@Observable
 final class FileStorageService {
-    func iCloudBooksURL() -> URL? {
-        FileManager.default.url(
-            forUbiquityContainerIdentifier: AppConstants.iCloudContainerID
-        )?.appendingPathComponent("Books")
+
+    // MARK: - Storage directory
+
+    private func storageDirectory() async -> URL {
+        // ubiquityContainerURL can block — must NOT be called on the main thread
+        let icloudBase = await Task.detached(priority: .utility) {
+            FileManager.default.url(forUbiquityContainerIdentifier: AppConstants.iCloudContainerID)
+        }.value
+
+        let base: URL
+        if let icloudBase {
+            base = icloudBase.appendingPathComponent("Documents/Books", isDirectory: true)
+            AppLogger.general.info("FileStorage: using iCloud — \(base.path)")
+        } else {
+            let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            base = docs.appendingPathComponent("Books", isDirectory: true)
+            AppLogger.general.info("FileStorage: iCloud unavailable, using local — \(base.path)")
+        }
+
+        if !FileManager.default.fileExists(atPath: base.path) {
+            try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        }
+        return base
     }
 
-    func copyToiCloud(_ sourceURL: URL, bookId: UUID) async throws {
-        guard let booksURL = iCloudBooksURL() else {
-            throw WIReaderError.storageError("iCloud container not available")
+    // MARK: - Public API
+
+    func save(from sourceURL: URL) async throws -> String {
+        let ext = sourceURL.pathExtension
+        let fileName = UUID().uuidString + (ext.isEmpty ? "" : "." + ext)
+        let destination = await storageDirectory().appendingPathComponent(fileName)
+
+        do {
+            try FileManager.default.copyItem(at: sourceURL, to: destination)
+        } catch {
+            throw WIReaderError.storageError("Copy failed: \(error.localizedDescription)")
         }
-        try FileManager.default.createDirectory(at: booksURL, withIntermediateDirectories: true)
-        let destination = booksURL.appendingPathComponent("\(bookId).\(sourceURL.pathExtension)")
-        if FileManager.default.fileExists(atPath: destination.path) {
-            try FileManager.default.removeItem(at: destination)
-        }
-        try FileManager.default.copyItem(at: sourceURL, to: destination)
+        return fileName
     }
 
-    func localURL(for book: Book) -> URL? {
-        iCloudBooksURL()?.appendingPathComponent(book.fileName)
+    func url(for fileName: String) async -> URL? {
+        let candidate = await storageDirectory().appendingPathComponent(fileName)
+        return FileManager.default.fileExists(atPath: candidate.path) ? candidate : nil
+    }
+
+    func delete(fileName: String) async throws {
+        let target = await storageDirectory().appendingPathComponent(fileName)
+        guard FileManager.default.fileExists(atPath: target.path) else { return }
+        do {
+            try FileManager.default.removeItem(at: target)
+        } catch {
+            throw WIReaderError.storageError("Delete failed: \(error.localizedDescription)")
+        }
     }
 }
