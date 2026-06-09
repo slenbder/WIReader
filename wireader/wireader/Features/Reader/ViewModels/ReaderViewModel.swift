@@ -69,7 +69,7 @@ final class ReaderViewModel {
     func applyPendingScroll() {
         guard let wv = webView, let pos = pendingScrollPosition else { return }
         pendingScrollPosition = nil
-        wv.evaluateJavaScript("window.scrollTo(0, document.body.scrollHeight * \(pos));")
+        wv.evaluateJavaScript("window.scrollTo(0, (document.body.scrollHeight - window.innerHeight) * \(pos));")
     }
 
     func onScrollProgress(_ position: Double, context: ModelContext) {

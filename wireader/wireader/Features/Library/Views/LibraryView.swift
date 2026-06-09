@@ -37,7 +37,7 @@ struct LibraryView: View {
                 if books.isEmpty {
                     emptyState
                 } else if showGrid {
-                    BookGridView(books: filteredBooks, onDelete: deleteBook)
+                    BookGridView(books: filteredBooks, onDelete: { id in await viewModel.deleteBook(id: id, books: books, context: modelContext) })
                 } else {
                     bookList
                 }
@@ -174,7 +174,7 @@ struct LibraryView: View {
             .onDelete { indexSet in
                 Task { @MainActor in
                     for idx in indexSet {
-                        await deleteBook(id: filteredBooks[idx].id)
+                        await viewModel.deleteBook(id: filteredBooks[idx].id, books: books, context: modelContext)
                     }
                 }
             }
@@ -182,14 +182,5 @@ struct LibraryView: View {
         .listStyle(.plain)
     }
 
-    private func deleteBook(id: UUID) async {
-        guard let book = books.first(where: { $0.id == id }) else { return }
-        let repo = BookRepository(modelContext: modelContext, fileStorage: FileStorageService())
-        do {
-            try await repo.delete(book)
-        } catch {
-            viewModel.importError = error
-            viewModel.isShowingError = true
-        }
-    }
+
 }
