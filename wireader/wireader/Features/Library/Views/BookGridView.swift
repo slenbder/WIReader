@@ -9,13 +9,17 @@ struct BookGridView: View {
         self.onDelete = onDelete
     }
 
+    @State private var selectedBook: Book?
+
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(books, id: \.id) { book in
-                    NavigationLink(destination: BookDetailView(book: book)) {
+                    Button {
+                        selectedBook = book
+                    } label: {
                         BookCardView(book: book)
                     }
                     .buttonStyle(.plain)
@@ -30,6 +34,10 @@ struct BookGridView: View {
                 }
             }
             .padding()
+        }
+        // TODO: заменить на BookDetailView в задаче 1.10
+        .fullScreenCover(item: $selectedBook) { book in
+            ReaderContainerView(book: book)
         }
     }
 }

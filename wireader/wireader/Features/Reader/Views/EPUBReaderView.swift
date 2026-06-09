@@ -2,26 +2,24 @@ import SwiftUI
 import WebKit
 
 struct EPUBReaderView: UIViewRepresentable {
-    let book: Book
-    let viewModel: ReaderViewModel
+    let chapterURL: URL
+    let allowedDir: URL
 
     func makeUIView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.navigationDelegate = context.coordinator
-        return webView
+        WKWebView(frame: .zero, configuration: WKWebViewConfiguration())
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // Load current chapter file using loadFileURL
+        guard context.coordinator.lastLoadedURL != chapterURL else { return }
+        context.coordinator.lastLoadedURL = chapterURL
+        webView.loadFileURL(chapterURL, allowingReadAccessTo: allowedDir)
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(viewModel: viewModel)
+        Coordinator()
     }
 
-    final class Coordinator: NSObject, WKNavigationDelegate {
-        let viewModel: ReaderViewModel
-        init(viewModel: ReaderViewModel) { self.viewModel = viewModel }
+    final class Coordinator: NSObject {
+        var lastLoadedURL: URL?
     }
 }
