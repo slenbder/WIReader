@@ -38,3 +38,6 @@ Core/ Data/ Services/ Features/ Resources/
 @docs/Architecture.md
 @docs/TaskBreakdown.md
 
+## SwiftUI gotchas
+- Несколько .fileImporter на одном view-дереве: срабатывает только последний. Вешать на разные узлы дерева.
+
