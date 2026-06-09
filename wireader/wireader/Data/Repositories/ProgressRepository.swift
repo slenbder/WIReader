@@ -1,22 +1,43 @@
 import SwiftData
 import Foundation
 
-@Observable
+@MainActor
 final class ProgressRepository {
-    private let modelContext: ModelContext
 
-    init(modelContext: ModelContext) {
-        self.modelContext = modelContext
-    }
-
-    func progress(for bookId: UUID) throws -> ReadingProgress? {
+    func fetch(bookId: UUID, context: ModelContext) -> ReadingProgress? {
+        let id = bookId
         let descriptor = FetchDescriptor<ReadingProgress>(
-            predicate: #Predicate { $0.bookId == bookId }
+            predicate: #Predicate { $0.bookId == id }
         )
-        return try modelContext.fetch(descriptor).first
+        return (try? context.fetch(descriptor))?.first
     }
 
-    func save() throws {
-        try modelContext.save()
+    func save(progress: ReadingProgress, context: ModelContext) throws {
+        context.insert(progress)
+        try context.save()
+    }
+
+    func updateProgress(
+        bookId: UUID,
+        chapterIndex: Int,
+        positionInChapter: Double,
+        totalChapters: Int,
+        context: ModelContext
+    ) throws {
+        let record = fetch(bookId: bookId, context: context) ?? {
+            let r = ReadingProgress()
+            r.bookId = bookId
+            context.insert(r)
+            return r
+        }()
+        record.chapterIndex = chapterIndex
+        record.positionInChapter = positionInChapter
+        record.overallProgress = ProgressCalculator.overallProgress(
+            chapterIndex: chapterIndex,
+            positionInChapter: positionInChapter,
+            totalChapters: totalChapters
+        )
+        record.lastUpdated = Date()
+        try context.save()
     }
 }

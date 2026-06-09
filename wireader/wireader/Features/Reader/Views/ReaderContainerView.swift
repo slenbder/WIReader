@@ -1,9 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct ReaderContainerView: View {
     let book: Book
     @State private var viewModel = ReaderViewModel()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         ZStack {
@@ -26,7 +28,19 @@ struct ReaderContainerView: View {
                       let chapter = viewModel.currentChapter,
                       let tempDir = viewModel.tempDir {
                 VStack(spacing: 0) {
-                    EPUBReaderView(chapterURL: chapter.fileURL, allowedDir: tempDir)
+                    EPUBReaderView(
+                        chapterURL: chapter.fileURL,
+                        allowedDir: tempDir,
+                        onProgressUpdate: { position in
+                            viewModel.onScrollProgress(position, context: modelContext)
+                        },
+                        onWebViewReady: { wv in
+                            viewModel.setWebView(wv)
+                        },
+                        onPageLoaded: {
+                            viewModel.applyPendingScroll()
+                        }
+                    )
 
                     // TODO: заменить на полные контролы в Phase 2.6
                     HStack {
@@ -46,6 +60,7 @@ struct ReaderContainerView: View {
         }
         .task {
             await viewModel.load(book: book, fileStorage: FileStorageService())
+            viewModel.restoreProgress(for: book.id, context: modelContext)
         }
     }
 }

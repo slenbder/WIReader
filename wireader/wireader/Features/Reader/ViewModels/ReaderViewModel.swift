@@ -1,5 +1,7 @@
 import Foundation
 import Observation
+import WebKit
+import SwiftData
 
 @Observable
 @MainActor
@@ -10,10 +12,14 @@ final class ReaderViewModel {
     var tempDir: URL? = nil
     var isLoading: Bool = false
     var error: Error? = nil
-
-    // Kept for Phase 2 (ReaderControlsView, progress tracking)
     var positionInChapter: Double = 0.0
     var overallProgress: Double = 0.0
+
+    private(set) var webView: WKWebView?
+    private var bookId: UUID?
+    private var lastProgressSave: Date = .distantPast
+    private var pendingScrollPosition: Double?
+    private let progressRepo = ProgressRepository()
 
     var currentChapter: EPUBChapter? {
         guard !chapters.isEmpty else { return nil }
@@ -23,6 +29,7 @@ final class ReaderViewModel {
     func load(book: Book, fileStorage: FileStorageService) async {
         isLoading = true
         error = nil
+        bookId = book.id
         defer { isLoading = false }
         do {
             guard let fileURL = await fileStorage.url(for: book.fileName) else {
@@ -40,26 +47,55 @@ final class ReaderViewModel {
     func goToNextChapter() {
         guard currentChapterIndex < chapters.count - 1 else { return }
         currentChapterIndex += 1
+        positionInChapter = 0.0
     }
 
     func goToPreviousChapter() {
         guard currentChapterIndex > 0 else { return }
         currentChapterIndex -= 1
+        positionInChapter = 0.0
     }
 
-    // Used by TableOfContentsView
     func goToChapter(_ index: Int) {
         guard index >= 0, index < chapters.count else { return }
         currentChapterIndex = index
         positionInChapter = 0.0
     }
 
-    func updateProgress(position: Double) {
+    func setWebView(_ wv: WKWebView) {
+        webView = wv
+    }
+
+    func applyPendingScroll() {
+        guard let wv = webView, let pos = pendingScrollPosition else { return }
+        pendingScrollPosition = nil
+        wv.evaluateJavaScript("window.scrollTo(0, document.body.scrollHeight * \(pos));")
+    }
+
+    func onScrollProgress(_ position: Double, context: ModelContext) {
         positionInChapter = position
-        overallProgress = ProgressCalculator.overall(
+        overallProgress = ProgressCalculator.overallProgress(
             chapterIndex: currentChapterIndex,
-            positionInChapter: positionInChapter,
+            positionInChapter: position,
             totalChapters: chapters.count
         )
+        let now = Date()
+        guard now.timeIntervalSince(lastProgressSave) >= 2.0 else { return }
+        lastProgressSave = now
+        guard let id = bookId else { return }
+        try? progressRepo.updateProgress(
+            bookId: id,
+            chapterIndex: currentChapterIndex,
+            positionInChapter: position,
+            totalChapters: chapters.count,
+            context: context
+        )
+    }
+
+    func restoreProgress(for bookId: UUID, context: ModelContext) {
+        guard let saved = progressRepo.fetch(bookId: bookId, context: context) else { return }
+        pendingScrollPosition = saved.positionInChapter
+        positionInChapter = saved.positionInChapter
+        currentChapterIndex = saved.chapterIndex
     }
 }
