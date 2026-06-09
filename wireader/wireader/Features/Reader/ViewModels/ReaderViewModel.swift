@@ -16,7 +16,7 @@ final class ReaderViewModel {
     var overallProgress: Double = 0.0
 
     private(set) var webView: WKWebView?
-    private var bookId: UUID?
+    private var book: Book?
     private var lastProgressSave: Date = .distantPast
     private var pendingScrollPosition: Double?
     private let progressRepo = ProgressRepository()
@@ -29,7 +29,7 @@ final class ReaderViewModel {
     func load(book: Book, fileStorage: FileStorageService) async {
         isLoading = true
         error = nil
-        bookId = book.id
+        self.book = book
         defer { isLoading = false }
         do {
             guard let fileURL = await fileStorage.url(for: book.fileName) else {
@@ -82,9 +82,9 @@ final class ReaderViewModel {
         let now = Date()
         guard now.timeIntervalSince(lastProgressSave) >= 2.0 else { return }
         lastProgressSave = now
-        guard let id = bookId else { return }
+        guard let book else { return }
         try? progressRepo.updateProgress(
-            bookId: id,
+            book: book,
             chapterIndex: currentChapterIndex,
             positionInChapter: position,
             totalChapters: chapters.count,

@@ -18,18 +18,22 @@ final class ProgressRepository {
     }
 
     func updateProgress(
-        bookId: UUID,
+        book: Book,
         chapterIndex: Int,
         positionInChapter: Double,
         totalChapters: Int,
         context: ModelContext
     ) throws {
-        let record = fetch(bookId: bookId, context: context) ?? {
+        let record = fetch(bookId: book.id, context: context) ?? {
             let r = ReadingProgress()
-            r.bookId = bookId
+            r.bookId = book.id
             context.insert(r)
             return r
         }()
+        // Устанавливаем SwiftData-связь, если ещё не установлена
+        if book.progress == nil {
+            book.progress = record
+        }
         record.chapterIndex = chapterIndex
         record.positionInChapter = positionInChapter
         record.overallProgress = ProgressCalculator.overallProgress(

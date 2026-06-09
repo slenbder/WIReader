@@ -58,6 +58,16 @@ struct ReaderContainerView: View {
                 }
             }
         }
+        .overlay(alignment: .topLeading) {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.body.weight(.semibold))
+                    .padding(10)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .padding(.leading)
+            .padding(.top, 8)
+        }
         .task {
             await viewModel.load(book: book, fileStorage: FileStorageService())
             viewModel.restoreProgress(for: book.id, context: modelContext)
