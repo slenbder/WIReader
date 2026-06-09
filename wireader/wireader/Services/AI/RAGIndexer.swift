@@ -44,7 +44,7 @@ final class RAGIndexer {
         book.isIndexed = true
     }
 
-    private func loadChapters(for book: Book) throws -> [Chapter] {
+    private func loadChapters(for book: Book) throws -> [EPUBChapter] {
         // Dispatch to correct parser based on format
         return []
     }

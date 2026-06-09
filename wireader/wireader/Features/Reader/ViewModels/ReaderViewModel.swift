@@ -6,7 +6,7 @@ final class ReaderViewModel {
     var currentChapterIndex: Int = 0
     var positionInChapter: Double = 0.0
     var overallProgress: Double = 0.0
-    var chapters: [Chapter] = []
+    var chapters: [EPUBChapter] = []
 
     init(book: Book) {
         self.book = book
