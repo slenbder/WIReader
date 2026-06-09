@@ -1,7 +1,8 @@
 import SwiftData
 import Foundation
 
-// Local-only model — stored in separate ModelConfiguration without CloudKit
+// ⚠️ Local-only: goes into localConfig (cloudKitDatabase: .none)
+// Linked to Book via bookId — no @Relationship (different ModelConfiguration)
 @Model class AIChunk {
     @Attribute(.unique) var id: UUID = UUID()
     var bookId: UUID = UUID()

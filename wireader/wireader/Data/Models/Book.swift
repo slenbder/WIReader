@@ -18,7 +18,7 @@ import Foundation
     @Relationship(deleteRule: .cascade) var notes: [Note] = []
     @Relationship(deleteRule: .cascade) var sessions: [ReadingSession] = []
     @Relationship(deleteRule: .cascade) var chapterSummaries: [ChapterSummary] = []
-    var collection: BookCollection? = nil
+    @Relationship var collection: BookCollection? = nil
 
     init() {}
 }
