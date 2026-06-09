@@ -25,36 +25,41 @@ struct ReaderContainerView: View {
                 .padding()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if !viewModel.chapters.isEmpty,
-                      let chapter = viewModel.currentChapter,
-                      let tempDir = viewModel.tempDir {
-                VStack(spacing: 0) {
-                    EPUBReaderView(
-                        chapterURL: chapter.fileURL,
-                        allowedDir: tempDir,
-                        onProgressUpdate: { position in
-                            viewModel.onScrollProgress(position, context: modelContext)
-                        },
-                        onWebViewReady: { wv in
-                            viewModel.setWebView(wv)
-                        },
-                        onPageLoaded: {
-                            viewModel.applyPendingScroll()
-                        }
-                    )
+                      let chapter = viewModel.currentChapter {
+                if case .html(let fileURL) = chapter.content, let tempDir = viewModel.tempDir {
+                    VStack(spacing: 0) {
+                        EPUBReaderView(
+                            chapterURL: fileURL,
+                            allowedDir: tempDir,
+                            onProgressUpdate: { position in
+                                viewModel.onScrollProgress(position, context: modelContext)
+                            },
+                            onWebViewReady: { wv in
+                                viewModel.setWebView(wv)
+                            },
+                            onPageLoaded: {
+                                viewModel.applyPendingScroll()
+                            }
+                        )
 
-                    // TODO: заменить на полные контролы в Phase 2.6
-                    HStack {
-                        Button("← Назад") { viewModel.goToPreviousChapter() }
-                            .disabled(viewModel.currentChapterIndex == 0)
-                        Spacer()
-                        Text("\(viewModel.currentChapterIndex + 1) / \(viewModel.chapters.count)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Button("Вперёд →") { viewModel.goToNextChapter() }
-                            .disabled(viewModel.currentChapterIndex == viewModel.chapters.count - 1)
+                        // TODO: заменить на полные контролы в Phase 2.6
+                        HStack {
+                            Button("← Назад") { viewModel.goToPreviousChapter() }
+                                .disabled(viewModel.currentChapterIndex == 0)
+                            Spacer()
+                            Text("\(viewModel.currentChapterIndex + 1) / \(viewModel.chapters.count)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button("Вперёд →") { viewModel.goToNextChapter() }
+                                .disabled(viewModel.currentChapterIndex == viewModel.chapters.count - 1)
+                        }
+                        .padding()
                     }
-                    .padding()
+                } else {
+                    Text("Рендеринг TXT/FB2 — Phase 2.2")
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
         }

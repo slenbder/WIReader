@@ -61,7 +61,7 @@
 
 ## Phase 1 — Ядро и базовое чтение
 
-### [ ] 1.1 — SwiftData модели
+### [x] 1.1 — SwiftData модели
 **Что делаем:** все @Model классы по Architecture §3.
 **Файлы:** `Book.swift`, `ReadingProgress.swift`, `Bookmark.swift`, `Note.swift`, `ReadingSession.swift`, `ReadingGoal.swift`, `BookCollection.swift`, `ChapterSummary.swift`, `AIChunk.swift`
 **Требования (КРИТИЧНО для CloudKit):**
@@ -71,7 +71,7 @@
 - `format`, `type` как String (не enum) для CloudKit-совместимости
 **Готово когда:** модели компилируются, нет non-optional свойств без дефолтов.
 
-### [ ] 1.2 — ModelContainer с двумя конфигурациями
+### [x] 1.2 — ModelContainer с двумя конфигурациями
 **Что делаем:** настраиваем контейнер: synced (CloudKit) + local (AIChunk).
 **Файлы:** `WIReaderApp.swift`
 **Требования:**
@@ -81,7 +81,7 @@
 - `.modelContainer(container)` на корневом View
 **Готово когда:** приложение запускается, контейнер инициализируется без краша, в CloudKit Dashboard появляется схема.
 
-### [ ] 1.3 — FileStorageService
+### [x] 1.3 — FileStorageService
 **Что делаем:** сервис работы с файлами книг в iCloud Ubiquitous Container.
 **Файлы:** `FileStorageService.swift`
 **Требования:**
@@ -92,7 +92,7 @@
 - Graceful degradation: нет iCloud → работаем локально
 **Готово когда:** можно сохранить файл, получить его URL, удалить. Тестируется юнит-тестом или временной кнопкой.
 
-### [ ] 1.4 — EPUBParser
+### [x] 1.4 — EPUBParser
 **Что делаем:** парсер EPUB — распаковка, метаданные, главы, оглавление, обложка.
 **Файлы:** `EPUBParser.swift`, модель `EPUBChapter`, `ParsedBook`
 **Требования:**
@@ -103,7 +103,7 @@
 - Возврат `ParsedBook(title, author, coverData, chapters: [EPUBChapter], tempDir: URL)`
 **Готово когда:** на тестовом EPUB извлекаются корректные метаданные и список глав в правильном порядке.
 
-### [ ] 1.5 — BookImportService
+### [x] 1.5 — BookImportService
 **Что делаем:** оркестратор импорта — связывает парсер, файловое хранилище и SwiftData.
 **Файлы:** `BookImportService.swift`
 **Требования:**
@@ -114,7 +114,7 @@
 - НЕ запускает RAG-индексацию пока (Phase 3)
 **Готово когда:** импорт EPUB создаёт Book в базе с обложкой и метаданными.
 
-### [ ] 1.6 — BookRepository
+### [x] 1.6 — BookRepository
 **Что делаем:** слой доступа к данным книг поверх SwiftData.
 **Файлы:** `BookRepository.swift`
 **Требования:**
@@ -123,7 +123,7 @@
 - Удаление книги = удаление файла (через FileStorageService) + каскад в SwiftData
 **Готово когда:** CRUD по книгам работает через репозиторий.
 
-### [ ] 1.7 — LibraryView + LibraryViewModel
+### [x] 1.7 — LibraryView + LibraryViewModel
 **Что делаем:** главный экран библиотеки.
 **Файлы:** `LibraryView.swift`, `BookGridView.swift`, `BookCardView.swift`, `LibraryViewModel.swift`
 **Требования:**
@@ -134,7 +134,7 @@
 - Пустое состояние ("Добавьте первую книгу")
 **Готово когда:** видно список импортированных книг, работает импорт через Files, работает поиск.
 
-### [ ] 1.8 — ReaderContainerView + EPUBReaderView (базовый)
+### [x] 1.8 — ReaderContainerView + EPUBReaderView (базовый)
 **Что делаем:** контейнер ридера + базовый EPUB-рендер без тем.
 **Файлы:** `ReaderContainerView.swift`, `EPUBReaderView.swift`, `ReaderViewModel.swift`
 **Требования:**
@@ -145,7 +145,7 @@
 - Открывается через `.fullScreenCover` из BookDetailView
 **Готово когда:** EPUB открывается, текст читается, можно листать главы, ассеты (изображения) грузятся.
 
-### [ ] 1.9 — Прогресс чтения (EPUB)
+### [x] 1.9 — Прогресс чтения (EPUB)
 **Что делаем:** отслеживание и сохранение позиции чтения.
 **Файлы:** `ProgressCalculator.swift`, обновление `ReaderViewModel`, `ProgressRepository.swift`
 **Требования:**
@@ -155,7 +155,7 @@
 - При повторном открытии — возврат на сохранённую позицию
 **Готово когда:** закрыл книгу на середине, открыл снова — вернулся на то же место. Прогресс синхронизируется (проверить на втором устройстве/симуляторе).
 
-### [ ] 1.10 — BookDetailView
+### [x] 1.10 — BookDetailView
 **Что делаем:** экран книги перед чтением.
 **Файлы:** `BookDetailView.swift`, `BookDetailViewModel.swift`
 **Требования:**
@@ -168,7 +168,7 @@
 
 ## Phase 2 — Полноценное чтение
 
-### [ ] 2.1 — TXTParser + FB2Parser
+### [x] 2.1 — TXTParser + FB2Parser
 **Что делаем:** парсеры для TXT и FB2.
 **Файлы:** `TXTParser.swift`, `FB2Parser.swift`
 **Требования:**

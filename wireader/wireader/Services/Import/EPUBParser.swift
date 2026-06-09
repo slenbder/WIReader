@@ -61,10 +61,10 @@ final class EPUBParser {
         }
 
         // Build chapters in spine order
-        let chapters: [EPUBChapter] = opf.spineRefs.enumerated().compactMap { idx, idref in
+        let chapters: [BookChapter] = opf.spineRefs.enumerated().compactMap { idx, idref in
             guard let item = opf.manifest[idref] else { return nil }
             let title = matchTitle(for: item.href, in: toc) ?? "Chapter \(idx + 1)"
-            return EPUBChapter(index: idx, title: title, fileURL: opfDir.appendingPathComponent(item.href))
+            return BookChapter(index: idx, title: title, content: .html(fileURL: opfDir.appendingPathComponent(item.href)))
         }
 
         let coverData = opf.coverHref.flatMap {

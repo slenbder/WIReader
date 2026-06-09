@@ -14,7 +14,13 @@ final class RAGIndexer {
         guard !book.isIndexed else { return }
         let chapters = try loadChapters(for: book)
         for (chapterIdx, chapter) in chapters.enumerated() {
-            let text = try String(contentsOf: chapter.fileURL, encoding: .utf8)
+            let text: String
+            switch chapter.content {
+            case .html(let fileURL):
+                text = try String(contentsOf: fileURL, encoding: .utf8)
+            case .plainText(let t):
+                text = t
+            }
             let paragraphs = text.components(separatedBy: "\n\n").filter { !$0.isEmpty }
             var chunkIdx = 0
             var buffer = ""
@@ -44,8 +50,8 @@ final class RAGIndexer {
         book.isIndexed = true
     }
 
-    private func loadChapters(for book: Book) throws -> [EPUBChapter] {
-        // Dispatch to correct parser based on format
+    private func loadChapters(for book: Book) throws -> [BookChapter] {
+        // TODO(3.3): для .html извлекать чистый текст из HTML перед чанкингом — сырой String(contentsOf:) даёт один гигантский чанк с тегами
         return []
     }
 }

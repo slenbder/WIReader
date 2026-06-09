@@ -7,7 +7,7 @@ import SwiftData
 @MainActor
 final class ReaderViewModel {
 
-    var chapters: [EPUBChapter] = []
+    var chapters: [BookChapter] = []
     var currentChapterIndex: Int = 0
     var tempDir: URL? = nil
     var isLoading: Bool = false
@@ -21,7 +21,7 @@ final class ReaderViewModel {
     private var pendingScrollPosition: Double?
     private let progressRepo = ProgressRepository()
 
-    var currentChapter: EPUBChapter? {
+    var currentChapter: BookChapter? {
         guard !chapters.isEmpty else { return nil }
         return chapters[currentChapterIndex]
     }
