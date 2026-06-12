@@ -7,6 +7,12 @@ struct wireaderApp: App {
     @State private var appState = AppState()
 
     init() {
+        // Ensure Application Support directory exists before SwiftData tries to create stores.
+        // On a fresh simulator install the directory is absent; CoreData recovery is unreliable
+        // and can throw, triggering the fatalError below.
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        try? FileManager.default.createDirectory(at: appSupport, withIntermediateDirectories: true)
+
         // TODO: switch to cloudKitDatabase: .automatic when Apple Developer enrollment is active
         let syncedConfig = ModelConfiguration(
             "Synced",

@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import OSLog
 
 struct EPUBReaderView: UIViewRepresentable {
     let chapterURL: URL
@@ -19,6 +20,7 @@ struct EPUBReaderView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         context.coordinator.onProgressUpdate = onProgressUpdate
         context.coordinator.onPageLoaded = onPageLoaded
+        context.coordinator.webView = webView
         onWebViewReady(webView)
         return webView
     }
@@ -28,6 +30,8 @@ struct EPUBReaderView: UIViewRepresentable {
         context.coordinator.onPageLoaded = onPageLoaded
         guard context.coordinator.lastLoadedURL != chapterURL else { return }
         context.coordinator.lastLoadedURL = chapterURL
+        context.coordinator.isFirstRestore = true
+        webView.alpha = 0
         webView.loadFileURL(chapterURL, allowingReadAccessTo: allowedDir)
     }
 
@@ -41,17 +45,37 @@ struct EPUBReaderView: UIViewRepresentable {
         var lastLoadedURL: URL?
         var onProgressUpdate: (Double) -> Void = { _ in }
         var onPageLoaded: () -> Void = {}
+        var isFirstRestore: Bool = true
+        weak var webView: WKWebView?
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            // IMPORTANT: EPUB position restore relies on reapply at EVERY didFinish.
+            // Testing shows 3 didFinish events per chapter open (sh: 195 → 15313 → 14569).
+            // Likely cause: loadFileURL called multiple times when chapterURL changes
+            // in rapid succession. Do NOT deduplicate or skip reapply without a
+            // compensating mechanism — e.g. waiting for scrollHeight to stabilise —
+            // or EPUB restore will regress to pre-Fix-B behaviour (sh=195 drift).
             let js = """
-            window.addEventListener('scroll', function() {
-                var pos = window.scrollY;
-                var height = document.body.scrollHeight - window.innerHeight;
-                var progress = height > 0 ? pos / height : 0;
-                window.webkit.messageHandlers.scrollProgress.postMessage(progress);
-            }, { passive: true });
+            (function() {
+                window.addEventListener('scroll', function() {
+                    var sh = document.body.scrollHeight, ih = window.innerHeight, sy = window.scrollY;
+                    var progress = sh > ih ? sy / (sh - ih) : 0;
+                    window.webkit.messageHandlers.scrollProgress.postMessage(progress);
+                }, { passive: true });
+
+                // Fix B: if load already fired, reapply immediately; otherwise wait.
+                if (document.readyState === 'complete') {
+                    window.webkit.messageHandlers.scrollProgress.postMessage('reapply');
+                } else {
+                    window.addEventListener('load', function() {
+                        window.webkit.messageHandlers.scrollProgress.postMessage('reapply');
+                    }, { once: true });
+                }
+            })();
             """
-            webView.evaluateJavaScript(js)
+            webView.evaluateJavaScript(js) { _, error in
+                if let error { AppLogger.reader.error("didFinish JS: \(error.localizedDescription, privacy: .public)") }
+            }
             onPageLoaded()
         }
 
@@ -59,9 +83,18 @@ struct EPUBReaderView: UIViewRepresentable {
             _ userContentController: WKUserContentController,
             didReceive message: WKScriptMessage
         ) {
-            guard message.name == "scrollProgress",
-                  let position = message.body as? Double else { return }
-            onProgressUpdate(position)
+            guard message.name == "scrollProgress" else { return }
+            if let position = message.body as? Double {
+                onProgressUpdate(position)
+            } else if (message.body as? String) == "reapply" {
+                onPageLoaded()
+                if isFirstRestore {
+                    isFirstRestore = false
+                    DispatchQueue.main.async { [weak webView] in
+                        UIView.animate(withDuration: 0.15) { webView?.alpha = 1 }
+                    }
+                }
+            }
         }
     }
 

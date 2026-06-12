@@ -41,25 +41,24 @@ struct ReaderContainerView: View {
                                 viewModel.applyPendingScroll()
                             }
                         )
-
-                        // TODO: заменить на полные контролы в Phase 2.6
-                        HStack {
-                            Button("← Назад") { viewModel.goToPreviousChapter() }
-                                .disabled(viewModel.currentChapterIndex == 0)
-                            Spacer()
-                            Text("\(viewModel.currentChapterIndex + 1) / \(viewModel.chapters.count)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Button("Вперёд →") { viewModel.goToNextChapter() }
-                                .disabled(viewModel.currentChapterIndex == viewModel.chapters.count - 1)
-                        }
-                        .padding()
+                        chapterNavBar
                     }
-                } else {
-                    Text("Рендеринг TXT/FB2 — Phase 2.2")
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if case .plainText(let text) = chapter.content {
+                    VStack(spacing: 0) {
+                        TextReaderView(
+                            text: text,
+                            chapterTitle: chapter.title,
+                            scrollPosition: viewModel.positionInChapter,
+                            restoreToken: viewModel.restoreToken,
+                            onProgressUpdate: { position in
+                                viewModel.onScrollProgress(position, context: modelContext)
+                            },
+                            onFlushProgress: {
+                                viewModel.flushProgress(context: modelContext)
+                            }
+                        )
+                        chapterNavBar
+                    }
                 }
             }
         }
@@ -74,8 +73,26 @@ struct ReaderContainerView: View {
             .padding(.top, 8)
         }
         .task {
-            await viewModel.load(book: book, fileStorage: FileStorageService())
-            viewModel.restoreProgress(for: book.id, context: modelContext)
+            await viewModel.load(book: book, fileStorage: FileStorageService(), context: modelContext)
         }
+        .onDisappear {
+            viewModel.flushProgress(context: modelContext)
+        }
+    }
+
+    // TODO: заменить на полные контролы в Phase 2.6
+    private var chapterNavBar: some View {
+        HStack {
+            Button("← Назад") { viewModel.goToPreviousChapter() }
+                .disabled(viewModel.currentChapterIndex == 0)
+            Spacer()
+            Text("\(viewModel.currentChapterIndex + 1) / \(viewModel.chapters.count)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button("Вперёд →") { viewModel.goToNextChapter() }
+                .disabled(viewModel.currentChapterIndex == viewModel.chapters.count - 1)
+        }
+        .padding()
     }
 }
