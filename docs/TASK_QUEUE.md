@@ -1,0 +1,61 @@
+# Task Queue
+
+> Last updated: 2026-06-24
+> Full task details: docs/TASK_BREAKDOWN.md
+> Current project state: docs/PROJECT_STATE.md
+
+Tasks are ordered within each priority tier by recommended execution order (dependencies first).
+Do not skip tasks — earlier tasks have dependencies that later ones assume are complete.
+
+---
+
+## Priority: High
+
+| Task | Status | Complexity | Depends On | Notes |
+|------|--------|------------|------------|-------|
+| 2.10 Paging mode (EPUB + TXT/FB2) | Todo | High | 2.3, 2.4 | Canonical position = positionInChapter (0.0–1.0). Page number is derived, never stored. See G10, G11 in DECISIONS. |
+| 3.1 SubscriptionManager (StoreKit 2) | Todo | Medium | Phase 2 complete | Required gate before any AI feature can be built. Must implement first in Phase 3. |
+| 3.2 OpenRouterClient | Todo | Medium | 3.1 | API key from Keychain only. Streaming via AsyncThrowingStream. |
+| 3.3 RAGIndexer + BackgroundTasks | Todo | High | 3.2 | Fix HTML tag pollution before chunking (TODO(3.3) in code). |
+| 3.6 WhoIsPopupView + context menu | Todo | High | 3.2, 3.3, 3.4, 3.5 | Killer feature. Overlay, not sheet. Streaming output. Two context menu entry points: WKWebView JS-bridge and UIMenuController. |
+
+---
+
+## Priority: Medium
+
+| Task | Status | Complexity | Depends On | Notes |
+|------|--------|------------|------------|-------|
+| 2.3 PDFReaderView | Todo | Low | 2.2 | PDFKit, no AI, no themes. Progress = currentPage / pageCount. |
+| 2.4 Theme system + @AppStorage | Todo | Medium | 2.2 | light/dark/sepia free; midnight/forest premium. CSS injection for EPUB; NSAttributedString for TextKit. No subscription gate yet (gate in Phase 3). |
+| 2.5 ReaderSettingsSheet | Todo | Medium | 2.4 | Font size, font choice, line spacing, margins, theme picker. All @AppStorage, live-applied. |
+| 2.6 ReaderControlsView | Todo | Medium | 2.5 | Top/bottom bars, auto-hide on tap. Uses JS-bridge (EPUB) and UITextView tap detection (TextKit). |
+| 2.11 Auto-scroll + auto-page-flip | Todo | Medium | 2.10 | Configurable speed/interval. Easy to start/stop. |
+| 3.4 RAGRetriever | Todo | Medium | 3.3 | Skeleton exists (Decision G7). Filter by (chapterIndex, chunkIndex). Top-15 chunks by proximity. |
+| 3.5 AIPromptBuilder | Todo | Low | 3.4 | Who is? system prompt with hard anti-spoiler constraint. Chapter summary prompt. |
+| 3.7 ChapterSummarySheet | Todo | Medium | 3.2, 3.5 | Cache check first (ChapterSummary in SwiftData). Generate once, sync across devices. |
+| 4.1 ReadingSessionTracker | Todo | Low | Phase 3 complete | Start on reader open, stop on close/background. |
+| 4.2 StatisticsService | Todo | Medium | 4.1 | Aggregate by day/week/month/year. Streak calculation. |
+| 4.3 StatisticsView + ReadingChartView | Todo | Medium | 4.2 | Swift Charts, bar chart, period toggle. |
+| 5.1 OnboardingView | Todo | Medium | Phase 4 complete | First-launch only (@AppStorage flag). Trial offer. Import first book in-flow. |
+| 5.3 Paywall UI | Todo | Medium | 3.1 | Triggered by gated feature tap. Month/year plans, 14-day trial. |
+
+---
+
+## Priority: Low
+
+| Task | Status | Complexity | Depends On | Notes |
+|------|--------|------------|------------|-------|
+| 2.7 TableOfContentsView | Todo | Low | 2.6 | Chapter list, tap to jump, highlight current chapter. |
+| 2.8 Bookmarks | Todo | Low | 2.6 | Add at current position, list, navigate, delete. Synced via SwiftData. |
+| 2.9 Notes | Todo | Low | 2.8 | Text selection → note with position binding. List, navigate, delete. Synced. |
+| 4.4 ActivityGridView | Todo | Medium | 4.2 | GitHub-style heatmap, year/month view. |
+| 4.5 GoalsView + Streaks | Todo | Medium | 4.2 | Annual goal (books/pages/minutes), daily streak, personal challenges. |
+| 5.2 Sign in with Apple | Todo | Low | 5.1 | AccountView in Settings only. Keychain credential storage. No effect on sync. |
+| 5.4 App Store submission | Todo | High | Phase 5 tasks | Icon, screenshots, privacy policy, StoreKit products, App Store Connect upload. |
+
+---
+
+## Completed (reference)
+
+See docs/PROJECT_STATE.md — Implemented Features section.
+Full details with criteria: docs/TASK_BREAKDOWN.md.
