@@ -20,7 +20,7 @@ Pre-release. No App Store submission yet.
 
 ## Last Completed Task
 
-Phase 2.2 — TextReaderView (TextKit 2), deterministic position restore
+Phase 2.3 — PDFReaderView (PDFKit), page-based progress save/restore
 
 ---
 
@@ -47,13 +47,13 @@ Phase 2.2 — TextReaderView (TextKit 2), deterministic position restore
 ### Phase 2 — Full Reading Experience (partial)
 - ✅ 2.1 TXTParser + FB2Parser (format-independent BookChapter + ChapterContent model)
 - ✅ 2.2 TextReaderView (TextKit 2, UITextView, deterministic position restore)
+- ✅ 2.3 PDFReaderView (PDFKit, as-is rendering, page-based progress save/restore)
 
 ---
 
 ## Features In Progress
 
 ### Phase 2 — Full Reading Experience (remaining)
-- 🚧 2.3 PDFReaderView (PDFKit)
 - 🚧 2.4 Theme system (ReaderTheme, @AppStorage, CSS injection for EPUB, NSAttributedString for TextKit)
 - 🚧 2.5 ReaderSettingsSheet (font size, font choice, line spacing, margins, theme picker)
 - 🚧 2.6 ReaderControlsView (top/bottom bars, auto-hide)
@@ -106,7 +106,11 @@ Phase 2.2 — TextReaderView (TextKit 2), deterministic position restore
 
 ## Current Focus
 
-Complete Phase 2 (tasks 2.3–2.11) to reach a fully functional reader for all supported formats before adding AI.
+Complete Phase 2 (tasks 2.4–2.11) to reach a fully functional reader for all supported formats before adding AI.
+
+## Manual Verification Notes
+
+- Phase 2.3 PDFReaderView: manual simulator test passed on a real PDF file. PDF opens with PDFKit; page-based progress saves, updates book preview progress, and restores correctly on reopen. Current PDF UX uses vertical continuous scrolling, acceptable for 2.3.
 
 ## Next Milestone
 

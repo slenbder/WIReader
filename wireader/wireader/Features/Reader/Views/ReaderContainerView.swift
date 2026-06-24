@@ -60,6 +60,18 @@ struct ReaderContainerView: View {
                         chapterNavBar
                     }
                 }
+            } else if let pdfURL = viewModel.pdfURL {
+                PDFReaderView(
+                    fileURL: pdfURL,
+                    positionInChapter: viewModel.positionInChapter,
+                    restoreToken: viewModel.restoreToken,
+                    onProgressUpdate: { position in
+                        viewModel.onScrollProgress(position, context: modelContext)
+                    },
+                    onFlushProgress: {
+                        viewModel.flushProgress(context: modelContext)
+                    }
+                )
             }
         }
         .overlay(alignment: .topLeading) {

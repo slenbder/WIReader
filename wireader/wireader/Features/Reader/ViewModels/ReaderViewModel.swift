@@ -11,6 +11,7 @@ final class ReaderViewModel {
     var chapters: [BookChapter] = []
     var currentChapterIndex: Int = 0
     var tempDir: URL? = nil
+    var pdfURL: URL? = nil
     var isLoading: Bool = false
     var error: Error? = nil
     var positionInChapter: Double = 0.0
@@ -37,6 +38,20 @@ final class ReaderViewModel {
             guard let fileURL = await fileStorage.url(for: book.fileName) else {
                 throw WIReaderError.fileNotFound
             }
+
+            if book.format == "pdf" {
+                let savedPosition = min(max(progressRepo.fetch(bookId: book.id, context: context)?.positionInChapter ?? 0.0, 0.0), 1.0)
+                positionInChapter = savedPosition
+                pendingScrollPosition = nil
+                overallProgress = savedPosition
+                currentChapterIndex = 0
+                restoreToken += 1
+                chapters = []
+                tempDir = nil
+                pdfURL = fileURL
+                return
+            }
+
             let parsed: ParsedBook
             switch book.format {
             case "epub":
@@ -66,6 +81,7 @@ final class ReaderViewModel {
             restoreToken += 1
             chapters = parsed.chapters
             tempDir = parsed.tempDir
+            pdfURL = nil
         } catch {
             self.error = error
         }
@@ -115,7 +131,7 @@ final class ReaderViewModel {
         overallProgress = ProgressCalculator.overallProgress(
             chapterIndex: currentChapterIndex,
             positionInChapter: position,
-            totalChapters: chapters.count
+            totalChapters: progressUnitCount
         )
         let now = Date()
         guard now.timeIntervalSince(lastProgressSave) >= 2.0 else { return false }
@@ -125,7 +141,7 @@ final class ReaderViewModel {
             book: book,
             chapterIndex: currentChapterIndex,
             positionInChapter: position,
-            totalChapters: chapters.count,
+            totalChapters: progressUnitCount,
             context: context
         )
         return true
@@ -140,8 +156,12 @@ final class ReaderViewModel {
             book: book,
             chapterIndex: currentChapterIndex,
             positionInChapter: positionInChapter,
-            totalChapters: chapters.count,
+            totalChapters: progressUnitCount,
             context: context
         )
+    }
+
+    private var progressUnitCount: Int {
+        max(chapters.count, 1)
     }
 }
