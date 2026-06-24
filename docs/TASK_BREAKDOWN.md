@@ -210,7 +210,7 @@
 **Готово когда:** переключение тем меняет вид во всех текстовых рендерерах, выбор сохраняется между запусками.
 **Проверено:** `ReaderTheme` реализован с темами light, dark, sepia, midnight и forest; midnight/forest — premium metadata only, без subscription gate. Выбор темы хранится через `@AppStorage("selectedThemeId")`. EPUB применяет темы через CSS injection; `didFinish`/reapply restore behavior сохранён. TextReader применяет темы через TextKit 2; G10 restore semantics сохранены. PDF намеренно не изменялся и проверен как unaffected. Ручная проверка в симуляторе прошла для EPUB, TXT, FB2 и PDF unaffected. Build succeeded. Review completed with no High findings.
 
-### [ ] 2.5 — ReaderSettingsSheet
+### [x] 2.5 — ReaderSettingsSheet
 **Что делаем:** панель настроек чтения.
 **Файлы:** `ReaderSettingsSheet.swift`
 **Требования:**
@@ -220,6 +220,7 @@
 - Межстрочный интервал, отступы
 - Всё через @AppStorage, применяется вживую
 **Готово когда:** открывается из ридера, изменения применяются мгновенно и сохраняются.
+**Проверено:** ReaderSettingsSheet MVP реализован: theme picker with previews, font size, line spacing, reader margins, TXT/FB2 font selection. Settings persist via `@AppStorage` and apply live. EPUB typography intentionally unchanged for Task 2.5; EPUB themes continue to work and `didFinish`/reapply behavior is preserved. PDF rendering intentionally unchanged. TextReader G10 restore semantics preserved. Manual simulator testing passed for EPUB, TXT, FB2, and PDF. Build succeeded. `/review` found no blocking issues.
 
 ### [ ] 2.6 — ReaderControlsView
 **Что делаем:** верхняя и нижняя панели управления в ридере.

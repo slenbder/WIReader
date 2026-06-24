@@ -4,12 +4,25 @@ import SwiftData
 struct ReaderContainerView: View {
     let book: Book
     @State private var viewModel = ReaderViewModel()
-    @AppStorage("selectedThemeId") private var selectedThemeId: String = "forest"
+    @State private var showSettings = false
+    @AppStorage("selectedThemeId") private var selectedThemeId: String = "light"
+    @AppStorage("fontSize") private var fontSize: Double = 18
+    @AppStorage("lineSpacing") private var lineSpacing: Double = 1.4
+    @AppStorage("readerMargins") private var readerMargins: Double = 16
+    @AppStorage("readerFontName") private var readerFontName: String = "system"
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         let theme = ReaderTheme.theme(for: selectedThemeId)
+        let textStyle = TextReaderStyle(
+            bodyFontSize: CGFloat(fontSize),
+            titleFontSize: CGFloat(fontSize + 5),
+            lineSpacing: CGFloat(lineSpacing),
+            paragraphSpacing: CGFloat(fontSize * 0.7),
+            margins: CGFloat(readerMargins),
+            fontName: readerFontName
+        )
 
         ZStack {
             if viewModel.isLoading {
@@ -54,6 +67,7 @@ struct ReaderContainerView: View {
                             chapterTitle: chapter.title,
                             scrollPosition: viewModel.positionInChapter,
                             restoreToken: viewModel.restoreToken,
+                            style: textStyle,
                             theme: theme,
                             onProgressUpdate: { position in
                                 viewModel.onScrollProgress(position, context: modelContext)
@@ -88,6 +102,19 @@ struct ReaderContainerView: View {
             }
             .padding(.leading)
             .padding(.top, 8)
+        }
+        .overlay(alignment: .topTrailing) {
+            Button { showSettings = true } label: {
+                Image(systemName: "textformat.size")
+                    .font(.body.weight(.semibold))
+                    .padding(10)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .padding(.trailing)
+            .padding(.top, 8)
+        }
+        .sheet(isPresented: $showSettings) {
+            ReaderSettingsSheet()
         }
         .task {
             await viewModel.load(book: book, fileStorage: FileStorageService(), context: modelContext)

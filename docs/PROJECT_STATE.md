@@ -1,6 +1,6 @@
 # Project State
 
-> Last updated: 2026-06-24
+> Last updated: 2026-06-25
 > Branch: main
 > Canonical docs: docs/ (see docs/DOCUMENTATION_POLICY.md)
 > Original archived docs: wireader/docs/ — do not use as active source of truth
@@ -20,7 +20,7 @@ Pre-release. No App Store submission yet.
 
 ## Last Completed Task
 
-Phase 2.4 — Theme system + @AppStorage
+Phase 2.5 — ReaderSettingsSheet
 
 ---
 
@@ -49,13 +49,13 @@ Phase 2.4 — Theme system + @AppStorage
 - ✅ 2.2 TextReaderView (TextKit 2, UITextView, deterministic position restore)
 - ✅ 2.3 PDFReaderView (PDFKit, as-is rendering, page-based progress save/restore)
 - ✅ 2.4 Theme system + @AppStorage (ReaderTheme; light, dark, sepia, midnight, forest; EPUB CSS injection; TextKit 2 theme application)
+- ✅ 2.5 ReaderSettingsSheet (theme picker with previews, font size, line spacing, margins, TXT/FB2 font selection, @AppStorage persistence)
 
 ---
 
 ## Features In Progress
 
 ### Phase 2 — Full Reading Experience (remaining)
-- 🚧 2.5 ReaderSettingsSheet (font size, font choice, line spacing, margins, theme picker)
 - 🚧 2.6 ReaderControlsView (top/bottom bars, auto-hide)
 - 🚧 2.7 TableOfContentsView
 - 🚧 2.8 Bookmarks
@@ -106,12 +106,13 @@ Phase 2.4 — Theme system + @AppStorage
 
 ## Current Focus
 
-Complete Phase 2 (tasks 2.5–2.11) to reach a fully functional reader for all supported formats before adding AI.
+Complete Phase 2 (tasks 2.6–2.11) to reach a fully functional reader for all supported formats before adding AI.
 
 ## Manual Verification Notes
 
 - Phase 2.3 PDFReaderView: manual simulator test passed on a real PDF file. PDF opens with PDFKit; page-based progress saves, updates book preview progress, and restores correctly on reopen. Current PDF UX uses vertical continuous scrolling, acceptable for 2.3.
 - Phase 2.4 Theme system: build succeeded and manual simulator testing passed for EPUB, TXT, and FB2. PDF was intentionally unchanged and verified unaffected. `ReaderTheme` implements light, dark, sepia, midnight, and forest; midnight/forest are premium metadata only with no subscription gate. Theme selection is stored via `@AppStorage("selectedThemeId")`. EPUB themes are applied through CSS injection while preserving `didFinish`/reapply restore behavior. TextReader themes are applied through TextKit 2 while preserving G10 restore semantics. Review completed with no High findings.
+- Phase 2.5 ReaderSettingsSheet: build succeeded and manual simulator testing passed for EPUB, TXT, FB2, and PDF. Added ReaderSettingsSheet MVP with theme picker previews, font size, line spacing, reader margins, and TXT/FB2 font selection. Settings persist via `@AppStorage` and apply live. EPUB typography was intentionally left unchanged for this task; EPUB themes continue to work and `didFinish`/reapply behavior is preserved. PDF rendering was intentionally unchanged. TextReader G10 restore semantics are preserved. `/review` found no blocking issues.
 
 ## Next Milestone
 

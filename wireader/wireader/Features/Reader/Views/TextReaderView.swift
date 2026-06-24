@@ -1,12 +1,13 @@
 import SwiftUI
 import UIKit
 
-// Styling parameters — replace with @AppStorage values in Phase 2.5
-struct TextReaderStyle {
-    var bodyFontSize: CGFloat = 17
-    var titleFontSize: CGFloat = 22
-    var lineSpacing: CGFloat = 6
-    var paragraphSpacing: CGFloat = 12
+struct TextReaderStyle: Equatable {
+    var bodyFontSize: CGFloat = 18
+    var titleFontSize: CGFloat = 23
+    var lineSpacing: CGFloat = 1.4
+    var paragraphSpacing: CGFloat = 12.6
+    var margins: CGFloat = 16
+    var fontName: String = "system"
 }
 
 // MARK: - PositionRestoringTextView
@@ -47,7 +48,7 @@ struct TextReaderView: UIViewRepresentable {
         textView.isEditable = false
         textView.isSelectable = true
         textView.isScrollEnabled = true
-        textView.textContainerInset = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+        textView.textContainerInset = contentInsets
         textView.backgroundColor = theme.uiBackgroundColor
         textView.delegate = context.coordinator
         textView.onRestoreReady = { [weak textView, weak coordinator = context.coordinator] position in
@@ -65,12 +66,14 @@ struct TextReaderView: UIViewRepresentable {
         let textChanged = context.coordinator.lastText != text
         let tokenChanged = context.coordinator.lastRestoreToken != restoreToken
         let themeChanged = context.coordinator.lastThemeId != theme.id
+        let styleChanged = context.coordinator.lastStyle != style
 
         if textChanged {
             // isRestoringPosition prevents UITextView's internal offset reset
             // from firing scrollViewDidScroll and overwriting saved progress with 0
             context.coordinator.isRestoringPosition = true
             context.coordinator.lastText = text
+            textView.textContainerInset = contentInsets
             textView.attributedText = buildAttributedString()
             if !tokenChanged {
                 // Chapter navigation: UITextView does NOT reset contentOffset on
@@ -90,12 +93,18 @@ struct TextReaderView: UIViewRepresentable {
             }
         }
 
-        if themeChanged && !textChanged {
-            context.coordinator.applyThemeOnlyUpdate(textView, attributedText: buildAttributedString(), theme: theme)
+        if (themeChanged || styleChanged) && !textChanged {
+            context.coordinator.applyStyleOnlyUpdate(
+                textView,
+                attributedText: buildAttributedString(),
+                theme: theme,
+                insets: contentInsets
+            )
         } else {
             textView.backgroundColor = theme.uiBackgroundColor
         }
         context.coordinator.lastThemeId = theme.id
+        context.coordinator.lastStyle = style
 
         if textChanged || tokenChanged {
             context.coordinator.lastRestoreToken = restoreToken
@@ -124,24 +133,56 @@ struct TextReaderView: UIViewRepresentable {
 
         if let title = chapterTitle, !title.isEmpty {
             let titleStyle = NSMutableParagraphStyle()
+            titleStyle.lineHeightMultiple = style.lineSpacing
             titleStyle.paragraphSpacing = style.paragraphSpacing * 2
             result.append(NSAttributedString(string: title + "\n\n", attributes: [
-                .font: UIFont.boldSystemFont(ofSize: style.titleFontSize),
+                .font: titleFont(),
                 .foregroundColor: theme.uiTextColor,
                 .paragraphStyle: titleStyle
             ]))
         }
 
         let bodyStyle = NSMutableParagraphStyle()
-        bodyStyle.lineSpacing = style.lineSpacing
+        bodyStyle.lineHeightMultiple = style.lineSpacing
         bodyStyle.paragraphSpacing = style.paragraphSpacing
         result.append(NSAttributedString(string: text, attributes: [
-            .font: UIFont.systemFont(ofSize: style.bodyFontSize),
+            .font: bodyFont(),
             .foregroundColor: theme.uiTextColor,
             .paragraphStyle: bodyStyle
         ]))
 
         return result
+    }
+
+    private var contentInsets: UIEdgeInsets {
+        UIEdgeInsets(top: style.margins, left: style.margins, bottom: style.margins, right: style.margins)
+    }
+
+    private func bodyFont() -> UIFont {
+        font(size: style.bodyFontSize, bold: false)
+    }
+
+    private func titleFont() -> UIFont {
+        font(size: style.titleFontSize, bold: true)
+    }
+
+    private func font(size: CGFloat, bold: Bool) -> UIFont {
+        switch style.fontName {
+        case "serif":
+            return UIFont(name: bold ? "Georgia-Bold" : "Georgia", size: size)
+                ?? (bold ? UIFont.boldSystemFont(ofSize: size) : UIFont.systemFont(ofSize: size))
+        case "rounded":
+            let weight: UIFont.Weight = bold ? .bold : .regular
+            let descriptor = UIFont.systemFont(ofSize: size, weight: weight).fontDescriptor.withDesign(.rounded)
+            return descriptor.map { UIFont(descriptor: $0, size: size) }
+                ?? (bold ? UIFont.boldSystemFont(ofSize: size) : UIFont.systemFont(ofSize: size))
+        case "monospaced":
+            return bold
+                ? UIFont.monospacedSystemFont(ofSize: size, weight: .bold)
+                : UIFont.monospacedSystemFont(ofSize: size, weight: .regular)
+        default:
+            return bold ? UIFont.boldSystemFont(ofSize: size) : UIFont.systemFont(ofSize: size)
+        }
     }
 }
 
@@ -154,6 +195,7 @@ extension TextReaderView {
         var lastText: String?
         var lastRestoreToken: Int = -1
         var lastThemeId: String?
+        var lastStyle: TextReaderStyle?
         var isRestoringPosition = false
 
         init(onProgressUpdate: @escaping (Double) -> Bool, onFlushProgress: @escaping () -> Void) {
@@ -185,10 +227,16 @@ extension TextReaderView {
             isRestoringPosition = false
         }
 
-        func applyThemeOnlyUpdate(_ textView: UITextView, attributedText: NSAttributedString, theme: ReaderTheme) {
+        func applyStyleOnlyUpdate(
+            _ textView: UITextView,
+            attributedText: NSAttributedString,
+            theme: ReaderTheme,
+            insets: UIEdgeInsets
+        ) {
             let position = currentPosition(in: textView)
             isRestoringPosition = true
             textView.backgroundColor = theme.uiBackgroundColor
+            textView.textContainerInset = insets
             textView.attributedText = attributedText
             applyPosition(textView, position: position)
             isRestoringPosition = false

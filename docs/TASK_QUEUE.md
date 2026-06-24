@@ -1,6 +1,6 @@
 # Task Queue
 
-> Last updated: 2026-06-24
+> Last updated: 2026-06-25
 > Full task details: docs/TASK_BREAKDOWN.md
 > Current project state: docs/PROJECT_STATE.md
 
@@ -25,7 +25,6 @@ Do not skip tasks — earlier tasks have dependencies that later ones assume are
 
 | Task | Status | Complexity | Depends On | Notes |
 |------|--------|------------|------------|-------|
-| 2.5 ReaderSettingsSheet | Todo | Medium | 2.4 | Font size, font choice, line spacing, margins, theme picker. All @AppStorage, live-applied. |
 | 2.6 ReaderControlsView | Todo | Medium | 2.5 | Top/bottom bars, auto-hide on tap. Uses JS-bridge (EPUB) and UITextView tap detection (TextKit). |
 | 2.11 Auto-scroll + auto-page-flip | Todo | Medium | 2.10 | Configurable speed/interval. Easy to start/stop. |
 | 3.4 RAGRetriever | Todo | Medium | 3.3 | Skeleton exists (Decision G7). Filter by (chapterIndex, chunkIndex). Top-15 chunks by proximity. |
@@ -62,5 +61,6 @@ Recent completion:
 
 | Task | Status | Complexity | Depends On | Notes |
 |------|--------|------------|------------|-------|
+| 2.5 ReaderSettingsSheet | Done | Medium | 2.4 | ReaderSettingsSheet MVP complete: theme picker with previews, font size, line spacing, margins, TXT/FB2 font selection, all persisted via @AppStorage and live-applied. EPUB typography intentionally unchanged; EPUB themes, G10 restore semantics, EPUB didFinish/reapply behavior, and PDF rendering preserved. Build succeeded, manual EPUB/TXT/FB2/PDF simulator checks passed, `/review` found no blocking issues. |
 | 2.4 Theme system + @AppStorage | Done | Medium | 2.2 | ReaderTheme complete: light/dark/sepia; midnight/forest premium metadata only. `@AppStorage("selectedThemeId")`; EPUB CSS injection; TextKit 2 theme application; PDF unchanged. Build succeeded, manual EPUB/TXT/FB2/PDF-unaffected simulator checks passed, review had no High findings. |
 | 2.3 PDFReaderView | Done | Low | 2.2 | PDFKit as-is rendering. Page-based progress saves/restores correctly. Manual simulator test passed on a real PDF file. |
