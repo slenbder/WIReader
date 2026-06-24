@@ -20,7 +20,7 @@ Pre-release. No App Store submission yet.
 
 ## Last Completed Task
 
-Phase 2.3 — PDFReaderView (PDFKit), page-based progress save/restore
+Phase 2.4 — Theme system + @AppStorage
 
 ---
 
@@ -48,13 +48,13 @@ Phase 2.3 — PDFReaderView (PDFKit), page-based progress save/restore
 - ✅ 2.1 TXTParser + FB2Parser (format-independent BookChapter + ChapterContent model)
 - ✅ 2.2 TextReaderView (TextKit 2, UITextView, deterministic position restore)
 - ✅ 2.3 PDFReaderView (PDFKit, as-is rendering, page-based progress save/restore)
+- ✅ 2.4 Theme system + @AppStorage (ReaderTheme; light, dark, sepia, midnight, forest; EPUB CSS injection; TextKit 2 theme application)
 
 ---
 
 ## Features In Progress
 
 ### Phase 2 — Full Reading Experience (remaining)
-- 🚧 2.4 Theme system (ReaderTheme, @AppStorage, CSS injection for EPUB, NSAttributedString for TextKit)
 - 🚧 2.5 ReaderSettingsSheet (font size, font choice, line spacing, margins, theme picker)
 - 🚧 2.6 ReaderControlsView (top/bottom bars, auto-hide)
 - 🚧 2.7 TableOfContentsView
@@ -106,11 +106,12 @@ Phase 2.3 — PDFReaderView (PDFKit), page-based progress save/restore
 
 ## Current Focus
 
-Complete Phase 2 (tasks 2.4–2.11) to reach a fully functional reader for all supported formats before adding AI.
+Complete Phase 2 (tasks 2.5–2.11) to reach a fully functional reader for all supported formats before adding AI.
 
 ## Manual Verification Notes
 
 - Phase 2.3 PDFReaderView: manual simulator test passed on a real PDF file. PDF opens with PDFKit; page-based progress saves, updates book preview progress, and restores correctly on reopen. Current PDF UX uses vertical continuous scrolling, acceptable for 2.3.
+- Phase 2.4 Theme system: build succeeded and manual simulator testing passed for EPUB, TXT, and FB2. PDF was intentionally unchanged and verified unaffected. `ReaderTheme` implements light, dark, sepia, midnight, and forest; midnight/forest are premium metadata only with no subscription gate. Theme selection is stored via `@AppStorage("selectedThemeId")`. EPUB themes are applied through CSS injection while preserving `didFinish`/reapply restore behavior. TextReader themes are applied through TextKit 2 while preserving G10 restore semantics. Review completed with no High findings.
 
 ## Next Milestone
 

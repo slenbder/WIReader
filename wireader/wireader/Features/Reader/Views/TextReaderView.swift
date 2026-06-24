@@ -34,6 +34,7 @@ struct TextReaderView: UIViewRepresentable {
     let scrollPosition: Double
     let restoreToken: Int
     var style: TextReaderStyle = TextReaderStyle()
+    let theme: ReaderTheme
     var onProgressUpdate: (Double) -> Bool
     var onFlushProgress: () -> Void
 
@@ -47,7 +48,7 @@ struct TextReaderView: UIViewRepresentable {
         textView.isSelectable = true
         textView.isScrollEnabled = true
         textView.textContainerInset = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-        textView.backgroundColor = .systemBackground
+        textView.backgroundColor = theme.uiBackgroundColor
         textView.delegate = context.coordinator
         textView.onRestoreReady = { [weak textView, weak coordinator = context.coordinator] position in
             guard let textView, let coordinator else { return }
@@ -63,6 +64,7 @@ struct TextReaderView: UIViewRepresentable {
 
         let textChanged = context.coordinator.lastText != text
         let tokenChanged = context.coordinator.lastRestoreToken != restoreToken
+        let themeChanged = context.coordinator.lastThemeId != theme.id
 
         if textChanged {
             // isRestoringPosition prevents UITextView's internal offset reset
@@ -87,6 +89,13 @@ struct TextReaderView: UIViewRepresentable {
                 _ = onProgressUpdate(0.0)
             }
         }
+
+        if themeChanged && !textChanged {
+            context.coordinator.applyThemeOnlyUpdate(textView, attributedText: buildAttributedString(), theme: theme)
+        } else {
+            textView.backgroundColor = theme.uiBackgroundColor
+        }
+        context.coordinator.lastThemeId = theme.id
 
         if textChanged || tokenChanged {
             context.coordinator.lastRestoreToken = restoreToken
@@ -118,6 +127,7 @@ struct TextReaderView: UIViewRepresentable {
             titleStyle.paragraphSpacing = style.paragraphSpacing * 2
             result.append(NSAttributedString(string: title + "\n\n", attributes: [
                 .font: UIFont.boldSystemFont(ofSize: style.titleFontSize),
+                .foregroundColor: theme.uiTextColor,
                 .paragraphStyle: titleStyle
             ]))
         }
@@ -127,6 +137,7 @@ struct TextReaderView: UIViewRepresentable {
         bodyStyle.paragraphSpacing = style.paragraphSpacing
         result.append(NSAttributedString(string: text, attributes: [
             .font: UIFont.systemFont(ofSize: style.bodyFontSize),
+            .foregroundColor: theme.uiTextColor,
             .paragraphStyle: bodyStyle
         ]))
 
@@ -142,6 +153,7 @@ extension TextReaderView {
         var onFlushProgress: () -> Void
         var lastText: String?
         var lastRestoreToken: Int = -1
+        var lastThemeId: String?
         var isRestoringPosition = false
 
         init(onProgressUpdate: @escaping (Double) -> Bool, onFlushProgress: @escaping () -> Void) {
@@ -173,6 +185,15 @@ extension TextReaderView {
             isRestoringPosition = false
         }
 
+        func applyThemeOnlyUpdate(_ textView: UITextView, attributedText: NSAttributedString, theme: ReaderTheme) {
+            let position = currentPosition(in: textView)
+            isRestoringPosition = true
+            textView.backgroundColor = theme.uiBackgroundColor
+            textView.attributedText = attributedText
+            applyPosition(textView, position: position)
+            isRestoringPosition = false
+        }
+
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             // Same formula as applyPosition: ensureLayout + usageBounds + insets.
             // ensureLayout is a no-op after the first call (layout already computed),
@@ -191,6 +212,20 @@ extension TextReaderView {
             let position = min(max(scrollView.contentOffset.y / maxH, 0), 1)
             guard !isRestoringPosition else { return }
             _ = onProgressUpdate(position)
+        }
+
+        private func currentPosition(in textView: UITextView) -> Double {
+            let totalH: CGFloat
+            if let tlm = textView.textLayoutManager,
+               let doc = tlm.textContentManager?.documentRange {
+                tlm.ensureLayout(for: doc)
+                let insets = textView.textContainerInset
+                totalH = tlm.usageBoundsForTextContainer.height + insets.top + insets.bottom
+            } else {
+                totalH = textView.contentSize.height
+            }
+            let maxH = max(totalH - textView.bounds.height, 1)
+            return min(max(textView.contentOffset.y / maxH, 0), 1)
         }
 
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {

@@ -4,10 +4,13 @@ import SwiftData
 struct ReaderContainerView: View {
     let book: Book
     @State private var viewModel = ReaderViewModel()
+    @AppStorage("selectedThemeId") private var selectedThemeId: String = "forest"
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
+        let theme = ReaderTheme.theme(for: selectedThemeId)
+
         ZStack {
             if viewModel.isLoading {
                 ProgressView()
@@ -31,6 +34,7 @@ struct ReaderContainerView: View {
                         EPUBReaderView(
                             chapterURL: fileURL,
                             allowedDir: tempDir,
+                            theme: theme,
                             onProgressUpdate: { position in
                                 viewModel.onScrollProgress(position, context: modelContext)
                             },
@@ -50,6 +54,7 @@ struct ReaderContainerView: View {
                             chapterTitle: chapter.title,
                             scrollPosition: viewModel.positionInChapter,
                             restoreToken: viewModel.restoreToken,
+                            theme: theme,
                             onProgressUpdate: { position in
                                 viewModel.onScrollProgress(position, context: modelContext)
                             },

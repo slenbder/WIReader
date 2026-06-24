@@ -5,6 +5,7 @@ import OSLog
 struct EPUBReaderView: UIViewRepresentable {
     let chapterURL: URL
     let allowedDir: URL
+    let theme: ReaderTheme
     var onProgressUpdate: (Double) -> Void = { _ in }
     var onWebViewReady: (WKWebView) -> Void = { _ in }
     var onPageLoaded: () -> Void = {}
@@ -28,6 +29,10 @@ struct EPUBReaderView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onProgressUpdate = onProgressUpdate
         context.coordinator.onPageLoaded = onPageLoaded
+        context.coordinator.theme = theme
+        if context.coordinator.lastThemeId != theme.id {
+            context.coordinator.applyTheme(to: webView)
+        }
         guard context.coordinator.lastLoadedURL != chapterURL else { return }
         context.coordinator.lastLoadedURL = chapterURL
         context.coordinator.isFirstRestore = true
@@ -47,6 +52,8 @@ struct EPUBReaderView: UIViewRepresentable {
         var onPageLoaded: () -> Void = {}
         var isFirstRestore: Bool = true
         weak var webView: WKWebView?
+        var theme: ReaderTheme = .light
+        var lastThemeId: String?
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             // IMPORTANT: EPUB position restore relies on reapply at EVERY didFinish.
@@ -57,6 +64,16 @@ struct EPUBReaderView: UIViewRepresentable {
             // or EPUB restore will regress to pre-Fix-B behaviour (sh=195 drift).
             let js = """
             (function() {
+                window.wireaderApplyTheme = function(css) {
+                    var style = document.getElementById('wireader-theme-style');
+                    if (!style) {
+                        style = document.createElement('style');
+                        style.id = 'wireader-theme-style';
+                        document.head.appendChild(style);
+                    }
+                    style.textContent = css;
+                };
+
                 window.addEventListener('scroll', function() {
                     var sh = document.body.scrollHeight, ih = window.innerHeight, sy = window.scrollY;
                     var progress = sh > ih ? sy / (sh - ih) : 0;
@@ -76,7 +93,42 @@ struct EPUBReaderView: UIViewRepresentable {
             webView.evaluateJavaScript(js) { _, error in
                 if let error { AppLogger.reader.error("didFinish JS: \(error.localizedDescription, privacy: .public)") }
             }
+            applyTheme(to: webView)
             onPageLoaded()
+        }
+
+        func applyTheme(to webView: WKWebView) {
+            let css = theme.cssOverride
+            guard let cssData = try? JSONEncoder().encode(css),
+                  let cssLiteral = String(data: cssData, encoding: .utf8)
+            else {
+                AppLogger.reader.error("EPUB theme CSS encoding failed")
+                return
+            }
+
+            let js = """
+            (function() {
+                var css = \(cssLiteral);
+                if (window.wireaderApplyTheme) {
+                    window.wireaderApplyTheme(css);
+                    return;
+                }
+                var style = document.getElementById('wireader-theme-style');
+                if (!style) {
+                    style = document.createElement('style');
+                    style.id = 'wireader-theme-style';
+                    document.head.appendChild(style);
+                }
+                style.textContent = css;
+            })();
+            """
+            webView.evaluateJavaScript(js) { [themeId = theme.id, weak self] _, error in
+                if let error {
+                    AppLogger.reader.error("EPUB theme JS: \(error.localizedDescription, privacy: .public)")
+                } else {
+                    self?.lastThemeId = themeId
+                }
+            }
         }
 
         func userContentController(

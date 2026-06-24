@@ -198,7 +198,7 @@
 **Готово когда:** PDF открывается, листается, прогресс по страницам сохраняется.
 **Проверено:** ручной тест в симуляторе на реальном PDF: PDF открывается, page-based progress обновляет preview, сохраняется и восстанавливается при повторном открытии. Текущий UX — vertical continuous scrolling; это принято для 2.3.
 
-### [ ] 2.4 — Система тем + @AppStorage
+### [x] 2.4 — Система тем + @AppStorage
 **Что делаем:** темы ридера и их хранение.
 **Файлы:** `ReaderTheme.swift`, обновление рендереров
 **Требования:**
@@ -208,6 +208,7 @@
 - TextReaderView: применение через NSAttributedString + backgroundColor
 - Premium-темы помечены `isPremium`, пока без гейта (гейт в Phase 3)
 **Готово когда:** переключение тем меняет вид во всех текстовых рендерерах, выбор сохраняется между запусками.
+**Проверено:** `ReaderTheme` реализован с темами light, dark, sepia, midnight и forest; midnight/forest — premium metadata only, без subscription gate. Выбор темы хранится через `@AppStorage("selectedThemeId")`. EPUB применяет темы через CSS injection; `didFinish`/reapply restore behavior сохранён. TextReader применяет темы через TextKit 2; G10 restore semantics сохранены. PDF намеренно не изменялся и проверен как unaffected. Ручная проверка в симуляторе прошла для EPUB, TXT, FB2 и PDF unaffected. Build succeeded. Review completed with no High findings.
 
 ### [ ] 2.5 — ReaderSettingsSheet
 **Что делаем:** панель настроек чтения.
