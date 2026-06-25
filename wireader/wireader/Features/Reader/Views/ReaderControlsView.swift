@@ -5,6 +5,7 @@ struct ReaderControlsView: View {
     let viewModel: ReaderViewModel
     let dismiss: () -> Void
     let showSettings: () -> Void
+    let showTableOfContents: () -> Void
     let onInteraction: () -> Void
 
     var body: some View {
@@ -26,7 +27,8 @@ struct ReaderControlsView: View {
                 .lineLimit(1)
                 .frame(maxWidth: .infinity)
 
-            controlButton(systemName: "list.bullet", action: {})
+            controlButton(systemName: "list.bullet", action: showTableOfContents)
+                .disabled(viewModel.chapters.isEmpty)
             controlButton(systemName: "bookmark", action: {})
             controlButton(systemName: "note.text", action: {})
             controlButton(systemName: "textformat.size", action: showSettings)

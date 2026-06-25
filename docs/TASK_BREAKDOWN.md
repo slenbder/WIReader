@@ -222,7 +222,7 @@
 **Готово когда:** открывается из ридера, изменения применяются мгновенно и сохраняются.
 **Проверено:** ReaderSettingsSheet MVP реализован: theme picker with previews, font size, line spacing, reader margins, TXT/FB2 font selection. Settings persist via `@AppStorage` and apply live. EPUB typography intentionally unchanged for Task 2.5; EPUB themes continue to work and `didFinish`/reapply behavior is preserved. PDF rendering intentionally unchanged. TextReader G10 restore semantics preserved. Manual simulator testing passed for EPUB, TXT, FB2, and PDF. Build succeeded. `/review` found no blocking issues.
 
-### [ ] 2.6 — ReaderControlsView
+### [x] 2.6 — ReaderControlsView
 **Что делаем:** верхняя и нижняя панели управления в ридере.
 **Файлы:** `ReaderControlsView.swift`
 **Требования:**
@@ -230,8 +230,9 @@
 - Bottom bar: прогресс-бар, % прочитано, номер главы
 - Auto-hide по тапу на текст (через JS-bridge для EPUB)
 **Готово когда:** тап показывает/прячет контролы, кнопки открывают нужные панели.
+**Проверено:** ReaderControlsView implemented with top and bottom control bars. Auto-hide works for reader controls, including EPUB through the fixed WKWebView tap bridge. Manual simulator verification passed for EPUB, TXT, FB2, and PDF. `/review` found no blocking issues.
 
-### [ ] 2.7 — TableOfContentsView
+### [x] 2.7 — TableOfContentsView
 **Что делаем:** оглавление с переходом.
 **Файлы:** `TableOfContentsView.swift`
 **Требования:**
@@ -239,6 +240,7 @@
 - Тап → переход к главе
 - Подсветка текущей главы
 **Готово когда:** оглавление открывается, переход по главам работает.
+**Проверено:** TableOfContentsView implemented and opened from the ReaderControlsView TOC button. It lists chapters from ReaderViewModel, highlights the current chapter with accent color, semibold text, and checkmark, and selecting a chapter calls `goToChapter(index)` and dismisses the sheet. PDF keeps the TOC button visible but disabled. Build succeeded. `/review` found no blocking issues. Manual simulator verification passed for EPUB, TXT, FB2, and PDF behavior.
 
 ### [ ] 2.8 — Закладки
 **Что делаем:** создание и навигация по закладкам.

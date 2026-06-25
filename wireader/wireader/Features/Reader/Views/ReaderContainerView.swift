@@ -5,6 +5,7 @@ struct ReaderContainerView: View {
     let book: Book
     @State private var viewModel = ReaderViewModel()
     @State private var showSettings = false
+    @State private var showTableOfContents = false
     @State private var controlsVisible = true
     @State private var hideControlsTask: Task<Void, Never>?
     @AppStorage("selectedThemeId") private var selectedThemeId: String = "light"
@@ -110,6 +111,9 @@ struct ReaderContainerView: View {
                     showSettings: {
                         showSettings = true
                     },
+                    showTableOfContents: {
+                        showTableOfContents = true
+                    },
                     onInteraction: {
                         showControlsAndScheduleHide()
                     }
@@ -119,6 +123,9 @@ struct ReaderContainerView: View {
         }
         .sheet(isPresented: $showSettings) {
             ReaderSettingsSheet()
+        }
+        .sheet(isPresented: $showTableOfContents) {
+            TableOfContentsView(viewModel: viewModel)
         }
         .task {
             await viewModel.load(book: book, fileStorage: FileStorageService(), context: modelContext)
