@@ -6,6 +6,7 @@ struct ReaderContainerView: View {
     @State private var viewModel = ReaderViewModel()
     @State private var showSettings = false
     @State private var showTableOfContents = false
+    @State private var showBookmarks = false
     @State private var controlsVisible = true
     @State private var hideControlsTask: Task<Void, Never>?
     @AppStorage("selectedThemeId") private var selectedThemeId: String = "light"
@@ -49,6 +50,8 @@ struct ReaderContainerView: View {
                     EPUBReaderView(
                         chapterURL: fileURL,
                         allowedDir: tempDir,
+                        scrollPosition: viewModel.positionInChapter,
+                        restoreToken: viewModel.restoreToken,
                         theme: theme,
                         onProgressUpdate: { position in
                             viewModel.onScrollProgress(position, context: modelContext)
@@ -114,6 +117,13 @@ struct ReaderContainerView: View {
                     showTableOfContents: {
                         showTableOfContents = true
                     },
+                    addBookmark: {
+                        viewModel.addBookmark(context: modelContext)
+                    },
+                    showBookmarks: {
+                        viewModel.loadBookmarks(context: modelContext)
+                        showBookmarks = true
+                    },
                     onInteraction: {
                         showControlsAndScheduleHide()
                     }
@@ -126,6 +136,17 @@ struct ReaderContainerView: View {
         }
         .sheet(isPresented: $showTableOfContents) {
             TableOfContentsView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showBookmarks) {
+            BookmarksPanelView(
+                bookmarks: viewModel.bookmarks,
+                onSelect: { bookmark in
+                    viewModel.goToBookmark(bookmark)
+                },
+                onDelete: { bookmark in
+                    viewModel.deleteBookmark(bookmark, context: modelContext)
+                }
+            )
         }
         .task {
             await viewModel.load(book: book, fileStorage: FileStorageService(), context: modelContext)

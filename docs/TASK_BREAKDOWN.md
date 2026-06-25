@@ -242,7 +242,7 @@
 **Готово когда:** оглавление открывается, переход по главам работает.
 **Проверено:** TableOfContentsView implemented and opened from the ReaderControlsView TOC button. It lists chapters from ReaderViewModel, highlights the current chapter with accent color, semibold text, and checkmark, and selecting a chapter calls `goToChapter(index)` and dismisses the sheet. PDF keeps the TOC button visible but disabled. Build succeeded. `/review` found no blocking issues. Manual simulator verification passed for EPUB, TXT, FB2, and PDF behavior.
 
-### [ ] 2.8 — Закладки
+### [x] 2.8 — Закладки
 **Что делаем:** создание и навигация по закладкам.
 **Файлы:** `BookmarksPanelView.swift`, обновление ReaderViewModel
 **Требования:**
@@ -251,6 +251,7 @@
 - Удаление
 - Сохранение в SwiftData (синхронизируется)
 **Готово когда:** закладки создаются, переход работает, синхронизируются между устройствами.
+**Проверено:** BookmarkRepository added, BookmarksPanelView implemented, and ReaderControlsView bookmark button connected. Positional bookmarks use `chapterIndex + positionInChapter`, not chapter-only navigation. `ReaderViewModel.goToPosition(chapterIndex:positionInChapter:)` added as the canonical positional navigation primitive; `goToChapter` remains chapter-start navigation while bookmarks use `goToPosition`. EPUB/Text live bookmark navigation fixed by moving live restore handling into renderer update paths. PDF bookmarks verified working. Build succeeded. `/review` found no blocking issues. Manual simulator verification passed for EPUB, TXT, FB2, and PDF behavior.
 
 ### [ ] 2.9 — Заметки
 **Что делаем:** заметки с привязкой к выделенному тексту.

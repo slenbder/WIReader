@@ -41,8 +41,7 @@ Do not skip tasks — earlier tasks have dependencies that later ones assume are
 
 | Task | Status | Complexity | Depends On | Notes |
 |------|--------|------------|------------|-------|
-| 2.8 Bookmarks | Todo | Low | 2.6 | Current next task. Add at current position, list, navigate, delete. Synced via SwiftData. |
-| 2.9 Notes | Todo | Low | 2.8 | Text selection → note with position binding. List, navigate, delete. Synced. |
+| 2.9 Notes | Todo | Low | 2.8 | Current next task. Text selection → note with position binding. List, navigate, delete. Synced. |
 | 4.4 ActivityGridView | Todo | Medium | 4.2 | GitHub-style heatmap, year/month view. |
 | 4.5 GoalsView + Streaks | Todo | Medium | 4.2 | Annual goal (books/pages/minutes), daily streak, personal challenges. |
 | 5.2 Sign in with Apple | Todo | Low | 5.1 | AccountView in Settings only. Keychain credential storage. No effect on sync. |
@@ -59,6 +58,7 @@ Recent completion:
 
 | Task | Status | Complexity | Depends On | Notes |
 |------|--------|------------|------------|-------|
+| 2.8 Bookmarks | Done | Low | 2.6 | Positional bookmarks implemented with `chapterIndex + positionInChapter`, BookmarkRepository, BookmarksPanelView, add/list/navigate/delete, and `goToPosition` as canonical positional navigation. EPUB/Text live navigation fixed; PDF bookmarks verified. Build succeeded; manual EPUB/TXT/FB2/PDF verification passed; `/review` found no blocking issues. |
 | 2.7 TableOfContentsView | Done | Low | 2.6 | TableOfContentsView opens from ReaderControlsView, lists ReaderViewModel chapters, highlights current chapter, jumps via `goToChapter(index)`, and dismisses. PDF TOC button remains visible but disabled. Build succeeded; manual EPUB/TXT/FB2/PDF verification passed; `/review` found no blocking issues. |
 | 2.6 ReaderControlsView | Done | Medium | 2.5 | Top/bottom reader controls with auto-hide implemented. EPUB tap bridge fixed. Manual simulator verification passed for EPUB/TXT/FB2/PDF. `/review` found no blocking issues. |
 | 2.5 ReaderSettingsSheet | Done | Medium | 2.4 | ReaderSettingsSheet MVP complete: theme picker with previews, font size, line spacing, margins, TXT/FB2 font selection, all persisted via @AppStorage and live-applied. EPUB typography intentionally unchanged; EPUB themes, G10 restore semantics, EPUB didFinish/reapply behavior, and PDF rendering preserved. Build succeeded, manual EPUB/TXT/FB2/PDF simulator checks passed, `/review` found no blocking issues. |

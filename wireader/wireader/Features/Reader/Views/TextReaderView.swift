@@ -121,11 +121,18 @@ struct TextReaderView: UIViewRepresentable {
                 // Book open/restore: scrollPosition is reliable (load() sets it
                 // before mutating currentChapterIndex, so no race possible).
                 if scrollPosition > 0 {
-                    textView.alpha = 0
-                    textView.pendingPosition = scrollPosition
+                    if textChanged {
+                        textView.alpha = 0
+                        textView.pendingPosition = scrollPosition
+                    } else {
+                        textView.pendingPosition = nil
+                        context.coordinator.applyPosition(textView, position: scrollPosition)
+                        textView.alpha = 1
+                    }
                 } else {
                     textView.alpha = 1
                     textView.pendingPosition = nil
+                    textView.setContentOffset(CGPoint(x: 0, y: -textView.adjustedContentInset.top), animated: false)
                 }
             } else {
                 // Chapter navigation: always show from top, scrollPosition ignored.

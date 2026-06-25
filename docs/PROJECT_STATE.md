@@ -20,7 +20,7 @@ Pre-release. No App Store submission yet.
 
 ## Last Completed Task
 
-Phase 2.7 — TableOfContentsView
+Phase 2.8 — Bookmarks
 
 ---
 
@@ -52,13 +52,13 @@ Phase 2.7 — TableOfContentsView
 - ✅ 2.5 ReaderSettingsSheet (theme picker with previews, font size, line spacing, margins, TXT/FB2 font selection, @AppStorage persistence)
 - ✅ 2.6 ReaderControlsView (top/bottom bars, auto-hide, EPUB tap bridge)
 - ✅ 2.7 TableOfContentsView (chapter list, current chapter highlight, chapter jump, PDF disabled state)
+- ✅ 2.8 Bookmarks (positional bookmarks with SwiftData sync, list, navigation, delete)
 
 ---
 
 ## Features In Progress
 
 ### Phase 2 — Full Reading Experience (remaining)
-- 🚧 2.8 Bookmarks
 - 🚧 2.9 Notes (with text selection)
 - 🚧 2.10 Paging mode (horizontal page-flip for EPUB + TXT/FB2) — complex
 - 🚧 2.11 Reader UI Polish Pass
@@ -103,12 +103,13 @@ Phase 2.7 — TableOfContentsView
 - `RAGIndexer.loadChapters` — when content is `.html`, reads raw HTML string with tags before chunking. Tags will pollute RAG chunks. Marked `TODO(3.3)` in code. Must clean HTML before chunking when implementing task 3.3.
 - `BookImportService` — TXT/FB2/PDF import paths are stubs from Phase 1. Now replaced by real parsers (2.1), but verify integration is complete.
 - `EPUBParser` currently treats spine HTML files as app-level chapters. Some EPUB files contain multiple human-visible book chapters inside one spine item, so app-level TOC entries may not always match visible book headings. Future parser refinement may need NAV/NCX anchor mapping or heading-based subchapter splitting.
+- Bookmark precision is based on relative `positionInChapter`. After future paging mode, page number must remain derived from `positionInChapter` and must not be stored as canonical state.
 
 ---
 
 ## Current Focus
 
-Phase 2.8 — Bookmarks.
+Phase 2.9 — Notes.
 
 ## Manual Verification Notes
 
@@ -117,6 +118,7 @@ Phase 2.8 — Bookmarks.
 - Phase 2.5 ReaderSettingsSheet: build succeeded and manual simulator testing passed for EPUB, TXT, FB2, and PDF. Added ReaderSettingsSheet MVP with theme picker previews, font size, line spacing, reader margins, and TXT/FB2 font selection. Settings persist via `@AppStorage` and apply live. EPUB typography was intentionally left unchanged for this task; EPUB themes continue to work and `didFinish`/reapply behavior is preserved. PDF rendering was intentionally unchanged. TextReader G10 restore semantics are preserved. `/review` found no blocking issues.
 - Phase 2.6 ReaderControlsView: ReaderControlsView implemented with top/bottom bars and auto-hide behavior. EPUB tap bridge was fixed so taps in WKWebView toggle controls correctly. Manual simulator verification passed for EPUB, TXT, FB2, and PDF. `/review` found no blocking issues.
 - Phase 2.7 TableOfContentsView: TableOfContentsView implemented and opened from the ReaderControlsView TOC button. It lists chapters from ReaderViewModel, highlights the current chapter with accent color, semibold text, and checkmark, and selecting a chapter calls `goToChapter(index)` and dismisses the sheet. PDF keeps the TOC button visible but disabled. Build succeeded. `/review` found no blocking issues. Manual simulator verification passed: EPUB TOC opens, highlights the current chapter, jumps correctly, and dismisses; TXT/FB2 TOC flow works correctly; PDF TOC button remains visible but disabled.
+- Phase 2.8 Bookmarks: BookmarkRepository added, BookmarksPanelView implemented, and ReaderControlsView bookmark button connected. Positional bookmarks use `chapterIndex + positionInChapter`, not chapter-only navigation. `ReaderViewModel.goToPosition(chapterIndex:positionInChapter:)` was added as the canonical positional navigation primitive; `goToChapter` remains chapter-start navigation while bookmarks use `goToPosition`. EPUB/Text live bookmark navigation was fixed by moving live restore handling into renderer update paths. PDF bookmarks verified working. Build succeeded. `/review` found no blocking issues. Manual simulator verification passed for EPUB/TXT/FB2/PDF: EPUB/TXT/FB2 create positional bookmarks, multiple same-chapter bookmarks restore accurately, same-chapter jumps no longer blank the reader, cross-chapter jumps work, controls remain usable, EPUB tap-to-toggle still works, and PDF jumps are immediate and accurate.
 
 ## Next Milestone
 

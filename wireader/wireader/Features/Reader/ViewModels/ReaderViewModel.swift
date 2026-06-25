@@ -16,6 +16,7 @@ final class ReaderViewModel {
     var error: Error? = nil
     var positionInChapter: Double = 0.0
     var overallProgress: Double = 0.0
+    var bookmarks: [Bookmark] = []
     private(set) var restoreToken: Int = 0
 
     private(set) var webView: WKWebView?
@@ -23,6 +24,7 @@ final class ReaderViewModel {
     private var lastProgressSave: Date = .distantPast
     private var pendingScrollPosition: Double?
     private let progressRepo = ProgressRepository()
+    private let bookmarkRepo = BookmarkRepository()
 
     var currentChapter: BookChapter? {
         guard !chapters.isEmpty else { return nil }
@@ -47,6 +49,7 @@ final class ReaderViewModel {
                 currentChapterIndex = 0
                 restoreToken += 1
                 chapters = []
+                bookmarks = bookmarkRepo.fetch(bookId: book.id, context: context)
                 tempDir = nil
                 pdfURL = fileURL
                 return
@@ -80,6 +83,7 @@ final class ReaderViewModel {
             currentChapterIndex = restoredIndex
             restoreToken += 1
             chapters = parsed.chapters
+            bookmarks = bookmarkRepo.fetch(bookId: book.id, context: context)
             tempDir = parsed.tempDir
             pdfURL = nil
         } catch {
@@ -89,25 +93,57 @@ final class ReaderViewModel {
 
     func goToNextChapter() {
         guard currentChapterIndex < chapters.count - 1 else { return }
-        // Position BEFORE index — same pattern as load(): guarantees updateUIView
-        // sees scrollPosition=0 atomically with the new chapter text.
-        positionInChapter = 0.0
-        pendingScrollPosition = nil
-        currentChapterIndex += 1
+        goToPosition(chapterIndex: currentChapterIndex + 1, positionInChapter: 0.0)
     }
 
     func goToPreviousChapter() {
         guard currentChapterIndex > 0 else { return }
-        positionInChapter = 0.0
-        pendingScrollPosition = nil
-        currentChapterIndex -= 1
+        goToPosition(chapterIndex: currentChapterIndex - 1, positionInChapter: 0.0)
     }
 
     func goToChapter(_ index: Int) {
-        guard index >= 0, index < chapters.count else { return }
-        positionInChapter = 0.0
-        pendingScrollPosition = nil
-        currentChapterIndex = index
+        goToPosition(chapterIndex: index, positionInChapter: 0.0)
+    }
+
+    func goToBookmark(_ bookmark: Bookmark) {
+        goToPosition(
+            chapterIndex: bookmark.chapterIndex,
+            positionInChapter: bookmark.positionInChapter
+        )
+    }
+
+    func goToPosition(chapterIndex: Int, positionInChapter targetPosition: Double) {
+        let clampedPosition = min(max(targetPosition, 0.0), 1.0)
+
+        if chapters.isEmpty {
+            guard pdfURL != nil else { return }
+            positionInChapter = clampedPosition
+            pendingScrollPosition = nil
+            currentChapterIndex = 0
+            overallProgress = clampedPosition
+            restoreToken += 1
+            return
+        }
+
+        guard chapterIndex >= 0, chapterIndex < chapters.count else { return }
+
+        let previousChapterIndex = currentChapterIndex
+        let shouldRestorePosition = clampedPosition > 0.0 || previousChapterIndex == chapterIndex
+
+        // Position BEFORE index — same pattern as load(): guarantees renderers see
+        // the target scroll position atomically with a chapter change.
+        positionInChapter = clampedPosition
+        pendingScrollPosition = shouldRestorePosition ? clampedPosition : nil
+        overallProgress = ProgressCalculator.overallProgress(
+            chapterIndex: chapterIndex,
+            positionInChapter: clampedPosition,
+            totalChapters: progressUnitCount
+        )
+        currentChapterIndex = chapterIndex
+
+        if shouldRestorePosition {
+            restoreToken += 1
+        }
     }
 
     func setWebView(_ wv: WKWebView) {
@@ -161,7 +197,42 @@ final class ReaderViewModel {
         )
     }
 
+    func loadBookmarks(context: ModelContext) {
+        guard let book else { return }
+        bookmarks = bookmarkRepo.fetch(bookId: book.id, context: context)
+    }
+
+    func addBookmark(context: ModelContext) {
+        guard let book else { return }
+        let title = bookmarkTitle()
+        try? bookmarkRepo.add(
+            book: book,
+            chapterIndex: currentChapterIndex,
+            positionInChapter: positionInChapter,
+            title: title,
+            context: context
+        )
+        loadBookmarks(context: context)
+    }
+
+    func deleteBookmark(_ bookmark: Bookmark, context: ModelContext) {
+        guard let book else { return }
+        try? bookmarkRepo.delete(bookmark, from: book, context: context)
+        loadBookmarks(context: context)
+    }
+
     private var progressUnitCount: Int {
         max(chapters.count, 1)
+    }
+
+    private func bookmarkTitle() -> String {
+        let percent = Int((positionInChapter * 100).rounded())
+        if chapters.isEmpty {
+            return "PDF · \(percent)%"
+        }
+
+        let chapter = currentChapter?.title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = chapter?.isEmpty == false ? chapter! : "Глава \(currentChapterIndex + 1)"
+        return "\(title) · \(percent)%"
     }
 }

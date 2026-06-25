@@ -5,6 +5,8 @@ import OSLog
 struct EPUBReaderView: UIViewRepresentable {
     let chapterURL: URL
     let allowedDir: URL
+    let scrollPosition: Double
+    let restoreToken: Int
     let theme: ReaderTheme
     var onProgressUpdate: (Double) -> Void = { _ in }
     var onWebViewReady: (WKWebView) -> Void = { _ in }
@@ -33,11 +35,19 @@ struct EPUBReaderView: UIViewRepresentable {
         context.coordinator.onPageLoaded = onPageLoaded
         context.coordinator.onTap = onTap
         context.coordinator.theme = theme
+        let tokenChanged = context.coordinator.lastRestoreToken != restoreToken
         if context.coordinator.lastThemeId != theme.id {
             context.coordinator.applyTheme(to: webView)
         }
-        guard context.coordinator.lastLoadedURL != chapterURL else { return }
+        guard context.coordinator.lastLoadedURL != chapterURL else {
+            if tokenChanged {
+                context.coordinator.lastRestoreToken = restoreToken
+                context.coordinator.scroll(to: scrollPosition, in: webView)
+            }
+            return
+        }
         context.coordinator.lastLoadedURL = chapterURL
+        context.coordinator.lastRestoreToken = restoreToken
         context.coordinator.isFirstRestore = true
         webView.alpha = 0
         webView.loadFileURL(chapterURL, allowingReadAccessTo: allowedDir)
@@ -58,6 +68,7 @@ struct EPUBReaderView: UIViewRepresentable {
         weak var webView: WKWebView?
         var theme: ReaderTheme = .light
         var lastThemeId: String?
+        var lastRestoreToken: Int = -1
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             // IMPORTANT: EPUB position restore relies on reapply at EVERY didFinish.
@@ -176,6 +187,14 @@ struct EPUBReaderView: UIViewRepresentable {
                 } else {
                     self?.lastThemeId = themeId
                 }
+            }
+        }
+
+        func scroll(to position: Double, in webView: WKWebView) {
+            let clampedPosition = min(max(position, 0.0), 1.0)
+            let js = "window.scrollTo(0,(document.body.scrollHeight-window.innerHeight)*\(clampedPosition));"
+            webView.evaluateJavaScript(js) { _, error in
+                if let error { AppLogger.reader.error("EPUB live scroll JS: \(error.localizedDescription, privacy: .public)") }
             }
         }
 
