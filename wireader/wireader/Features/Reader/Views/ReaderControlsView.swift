@@ -4,35 +4,100 @@ struct ReaderControlsView: View {
     let book: Book
     let viewModel: ReaderViewModel
     let dismiss: () -> Void
-    @State private var showSettings = false
-    @State private var showTOC = false
+    let showSettings: () -> Void
+    let onInteraction: () -> Void
 
     var body: some View {
         VStack {
-            HStack {
-                Button(action: dismiss) {
-                    Image(systemName: "xmark")
-                }
-                Spacer()
-                Text(book.title).font(.caption).lineLimit(1)
-                Spacer()
-                Button { showSettings = true } label: {
-                    Image(systemName: "textformat")
-                }
-                Button { showTOC = true } label: {
-                    Image(systemName: "list.bullet")
-                }
-            }
-            .padding()
-            .background(.ultraThinMaterial)
+            topBar
 
             Spacer()
 
-            ProgressView(value: viewModel.overallProgress)
-                .padding(.horizontal)
-                .background(.ultraThinMaterial)
+            bottomBar
         }
-        .sheet(isPresented: $showSettings) { ReaderSettingsSheet() }
-        .sheet(isPresented: $showTOC) { TableOfContentsView(viewModel: viewModel) }
+    }
+
+    private var topBar: some View {
+        HStack(spacing: 12) {
+            controlButton(systemName: "xmark", action: dismiss)
+
+            Text(book.title)
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+
+            controlButton(systemName: "list.bullet", action: {})
+            controlButton(systemName: "bookmark", action: {})
+            controlButton(systemName: "note.text", action: {})
+            controlButton(systemName: "textformat.size", action: showSettings)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial)
+    }
+
+    private var bottomBar: some View {
+        VStack(spacing: 10) {
+            ProgressView(value: viewModel.overallProgress)
+                .tint(.primary)
+
+            HStack(spacing: 12) {
+                Button {
+                    onInteraction()
+                    viewModel.goToPreviousChapter()
+                } label: {
+                    Label("Назад", systemImage: "chevron.left")
+                        .labelStyle(.iconOnly)
+                }
+                .disabled(viewModel.currentChapterIndex == 0 || viewModel.chapters.isEmpty)
+
+                Text(progressText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+
+                Spacer()
+
+                if !viewModel.chapters.isEmpty {
+                    Text("\(viewModel.currentChapterIndex + 1) / \(viewModel.chapters.count)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+
+                Button {
+                    onInteraction()
+                    viewModel.goToNextChapter()
+                } label: {
+                    Label("Вперёд", systemImage: "chevron.right")
+                        .labelStyle(.iconOnly)
+                }
+                .disabled(
+                    viewModel.chapters.isEmpty ||
+                    viewModel.currentChapterIndex >= viewModel.chapters.count - 1
+                )
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+    }
+
+    private var progressText: String {
+        "\(Int((viewModel.overallProgress * 100).rounded()))%"
+    }
+
+    private func controlButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button {
+            onInteraction()
+            action()
+        } label: {
+            Image(systemName: systemName)
+                .font(.body.weight(.semibold))
+                .frame(width: 32, height: 32)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

@@ -9,6 +9,7 @@ struct EPUBReaderView: UIViewRepresentable {
     var onProgressUpdate: (Double) -> Void = { _ in }
     var onWebViewReady: (WKWebView) -> Void = { _ in }
     var onPageLoaded: () -> Void = {}
+    var onTap: () -> Void = {}
 
     func makeUIView(context: Context) -> WKWebView {
         let userController = WKUserContentController()
@@ -21,6 +22,7 @@ struct EPUBReaderView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         context.coordinator.onProgressUpdate = onProgressUpdate
         context.coordinator.onPageLoaded = onPageLoaded
+        context.coordinator.onTap = onTap
         context.coordinator.webView = webView
         onWebViewReady(webView)
         return webView
@@ -29,6 +31,7 @@ struct EPUBReaderView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {
         context.coordinator.onProgressUpdate = onProgressUpdate
         context.coordinator.onPageLoaded = onPageLoaded
+        context.coordinator.onTap = onTap
         context.coordinator.theme = theme
         if context.coordinator.lastThemeId != theme.id {
             context.coordinator.applyTheme(to: webView)
@@ -50,6 +53,7 @@ struct EPUBReaderView: UIViewRepresentable {
         var lastLoadedURL: URL?
         var onProgressUpdate: (Double) -> Void = { _ in }
         var onPageLoaded: () -> Void = {}
+        var onTap: () -> Void = {}
         var isFirstRestore: Bool = true
         weak var webView: WKWebView?
         var theme: ReaderTheme = .light
@@ -79,6 +83,50 @@ struct EPUBReaderView: UIViewRepresentable {
                     var progress = sh > ih ? sy / (sh - ih) : 0;
                     window.webkit.messageHandlers.scrollProgress.postMessage(progress);
                 }, { passive: true });
+
+                if (!window.wireaderTapListenerInstalled) {
+                    window.wireaderTapListenerInstalled = true;
+                    window.wireaderTapStart = null;
+                    window.wireaderLastTapPostedAt = 0;
+
+                    window.wireaderPostTap = function() {
+                        var now = Date.now();
+                        if (now - window.wireaderLastTapPostedAt < 500) { return; }
+                        window.wireaderLastTapPostedAt = now;
+                        window.webkit.messageHandlers.scrollProgress.postMessage('tap');
+                    };
+
+                    document.addEventListener('touchstart', function(event) {
+                        if (event.touches.length !== 1) {
+                            window.wireaderTapStart = null;
+                            return;
+                        }
+                        var touch = event.touches[0];
+                        window.wireaderTapStart = {
+                            x: touch.clientX,
+                            y: touch.clientY,
+                            t: Date.now()
+                        };
+                    }, { capture: true, passive: true });
+
+                    document.addEventListener('touchend', function(event) {
+                        var start = window.wireaderTapStart;
+                        window.wireaderTapStart = null;
+                        if (!start || event.changedTouches.length !== 1) { return; }
+
+                        var touch = event.changedTouches[0];
+                        var dx = Math.abs(touch.clientX - start.x);
+                        var dy = Math.abs(touch.clientY - start.y);
+                        var dt = Date.now() - start.t;
+                        if (dx <= 10 && dy <= 10 && dt <= 350) {
+                            window.wireaderPostTap();
+                        }
+                    }, { capture: true, passive: true });
+
+                    document.addEventListener('click', function() {
+                        window.wireaderPostTap();
+                    }, { capture: true, passive: true });
+                }
 
                 // Fix B: if load already fired, reapply immediately; otherwise wait.
                 if (document.readyState === 'complete') {
@@ -138,6 +186,8 @@ struct EPUBReaderView: UIViewRepresentable {
             guard message.name == "scrollProgress" else { return }
             if let position = message.body as? Double {
                 onProgressUpdate(position)
+            } else if (message.body as? String) == "tap" {
+                onTap()
             } else if (message.body as? String) == "reapply" {
                 onPageLoaded()
                 if isFirstRestore {

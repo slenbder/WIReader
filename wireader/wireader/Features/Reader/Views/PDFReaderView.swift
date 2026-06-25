@@ -19,6 +19,7 @@ struct PDFReaderView: UIViewRepresentable {
     let restoreToken: Int
     var onProgressUpdate: (Double) -> Bool
     var onFlushProgress: () -> Void
+    var onTap: () -> Void = {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onProgressUpdate: onProgressUpdate, onFlushProgress: onFlushProgress)
@@ -30,6 +31,13 @@ struct PDFReaderView: UIViewRepresentable {
         pdfView.displayMode = .singlePageContinuous
         pdfView.displayDirection = .vertical
         context.coordinator.pdfView = pdfView
+        let tapRecognizer = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTap)
+        )
+        tapRecognizer.cancelsTouchesInView = false
+        tapRecognizer.delegate = context.coordinator
+        pdfView.addGestureRecognizer(tapRecognizer)
         pdfView.onRestoreReady = { [weak pdfView, weak coordinator = context.coordinator] position in
             guard let pdfView, let coordinator else { return }
             coordinator.restore(pdfView, position: position)
@@ -46,6 +54,7 @@ struct PDFReaderView: UIViewRepresentable {
     func updateUIView(_ pdfView: PositionRestoringPDFView, context: Context) {
         context.coordinator.onProgressUpdate = onProgressUpdate
         context.coordinator.onFlushProgress = onFlushProgress
+        context.coordinator.onTap = onTap
 
         let urlChanged = context.coordinator.loadedURL != fileURL
         let tokenChanged = context.coordinator.restoreToken != restoreToken
@@ -72,9 +81,10 @@ struct PDFReaderView: UIViewRepresentable {
 }
 
 extension PDFReaderView {
-    final class Coordinator: NSObject {
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var onProgressUpdate: (Double) -> Bool
         var onFlushProgress: () -> Void
+        var onTap: () -> Void = {}
         weak var pdfView: PDFView?
         var loadedURL: URL?
         var restoreToken: Int = -1
@@ -124,6 +134,17 @@ extension PDFReaderView {
             let position = min(max(Double(currentPageNumber) / Double(document.pageCount), 0.0), 1.0)
             _ = onProgressUpdate(position)
             onFlushProgress()
+        }
+
+        @objc func handleTap() {
+            onTap()
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
         }
     }
 }

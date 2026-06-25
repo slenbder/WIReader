@@ -38,6 +38,7 @@ struct TextReaderView: UIViewRepresentable {
     let theme: ReaderTheme
     var onProgressUpdate: (Double) -> Bool
     var onFlushProgress: () -> Void
+    var onTap: () -> Void = {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onProgressUpdate: onProgressUpdate, onFlushProgress: onFlushProgress)
@@ -51,6 +52,13 @@ struct TextReaderView: UIViewRepresentable {
         textView.textContainerInset = contentInsets
         textView.backgroundColor = theme.uiBackgroundColor
         textView.delegate = context.coordinator
+        let tapRecognizer = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTap)
+        )
+        tapRecognizer.cancelsTouchesInView = false
+        tapRecognizer.delegate = context.coordinator
+        textView.addGestureRecognizer(tapRecognizer)
         textView.onRestoreReady = { [weak textView, weak coordinator = context.coordinator] position in
             guard let textView, let coordinator else { return }
             coordinator.applyPosition(textView, position: position)
@@ -62,6 +70,7 @@ struct TextReaderView: UIViewRepresentable {
     func updateUIView(_ textView: PositionRestoringTextView, context: Context) {
         context.coordinator.onProgressUpdate = onProgressUpdate
         context.coordinator.onFlushProgress = onFlushProgress
+        context.coordinator.onTap = onTap
 
         let textChanged = context.coordinator.lastText != text
         let tokenChanged = context.coordinator.lastRestoreToken != restoreToken
@@ -189,9 +198,10 @@ struct TextReaderView: UIViewRepresentable {
 // MARK: - Coordinator
 
 extension TextReaderView {
-    final class Coordinator: NSObject, UITextViewDelegate {
+    final class Coordinator: NSObject, UITextViewDelegate, UIGestureRecognizerDelegate {
         var onProgressUpdate: (Double) -> Bool
         var onFlushProgress: () -> Void
+        var onTap: () -> Void = {}
         var lastText: String?
         var lastRestoreToken: Int = -1
         var lastThemeId: String?
@@ -282,6 +292,17 @@ extension TextReaderView {
 
         func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
             if !decelerate { onFlushProgress() }
+        }
+
+        @objc func handleTap() {
+            onTap()
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
         }
     }
 }

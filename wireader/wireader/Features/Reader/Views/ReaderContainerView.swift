@@ -5,6 +5,8 @@ struct ReaderContainerView: View {
     let book: Book
     @State private var viewModel = ReaderViewModel()
     @State private var showSettings = false
+    @State private var controlsVisible = true
+    @State private var hideControlsTask: Task<Void, Never>?
     @AppStorage("selectedThemeId") private var selectedThemeId: String = "light"
     @AppStorage("fontSize") private var fontSize: Double = 18
     @AppStorage("lineSpacing") private var lineSpacing: Double = 1.4
@@ -43,41 +45,41 @@ struct ReaderContainerView: View {
             } else if !viewModel.chapters.isEmpty,
                       let chapter = viewModel.currentChapter {
                 if case .html(let fileURL) = chapter.content, let tempDir = viewModel.tempDir {
-                    VStack(spacing: 0) {
-                        EPUBReaderView(
-                            chapterURL: fileURL,
-                            allowedDir: tempDir,
-                            theme: theme,
-                            onProgressUpdate: { position in
-                                viewModel.onScrollProgress(position, context: modelContext)
-                            },
-                            onWebViewReady: { wv in
-                                viewModel.setWebView(wv)
-                            },
-                            onPageLoaded: {
-                                viewModel.applyPendingScroll()
-                            }
-                        )
-                        chapterNavBar
-                    }
+                    EPUBReaderView(
+                        chapterURL: fileURL,
+                        allowedDir: tempDir,
+                        theme: theme,
+                        onProgressUpdate: { position in
+                            viewModel.onScrollProgress(position, context: modelContext)
+                        },
+                        onWebViewReady: { wv in
+                            viewModel.setWebView(wv)
+                        },
+                        onPageLoaded: {
+                            viewModel.applyPendingScroll()
+                        },
+                        onTap: {
+                            toggleControls()
+                        }
+                    )
                 } else if case .plainText(let text) = chapter.content {
-                    VStack(spacing: 0) {
-                        TextReaderView(
-                            text: text,
-                            chapterTitle: chapter.title,
-                            scrollPosition: viewModel.positionInChapter,
-                            restoreToken: viewModel.restoreToken,
-                            style: textStyle,
-                            theme: theme,
-                            onProgressUpdate: { position in
-                                viewModel.onScrollProgress(position, context: modelContext)
-                            },
-                            onFlushProgress: {
-                                viewModel.flushProgress(context: modelContext)
-                            }
-                        )
-                        chapterNavBar
-                    }
+                    TextReaderView(
+                        text: text,
+                        chapterTitle: chapter.title,
+                        scrollPosition: viewModel.positionInChapter,
+                        restoreToken: viewModel.restoreToken,
+                        style: textStyle,
+                        theme: theme,
+                        onProgressUpdate: { position in
+                            viewModel.onScrollProgress(position, context: modelContext)
+                        },
+                        onFlushProgress: {
+                            viewModel.flushProgress(context: modelContext)
+                        },
+                        onTap: {
+                            toggleControls()
+                        }
+                    )
                 }
             } else if let pdfURL = viewModel.pdfURL {
                 PDFReaderView(
@@ -89,54 +91,67 @@ struct ReaderContainerView: View {
                     },
                     onFlushProgress: {
                         viewModel.flushProgress(context: modelContext)
+                    },
+                    onTap: {
+                        toggleControls()
                     }
                 )
             }
         }
-        .overlay(alignment: .topLeading) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.body.weight(.semibold))
-                    .padding(10)
-                    .background(.ultraThinMaterial, in: Circle())
+        .overlay {
+            if controlsVisible {
+                ReaderControlsView(
+                    book: book,
+                    viewModel: viewModel,
+                    dismiss: {
+                        hideControlsTask?.cancel()
+                        dismiss()
+                    },
+                    showSettings: {
+                        showSettings = true
+                    },
+                    onInteraction: {
+                        showControlsAndScheduleHide()
+                    }
+                )
+                .transition(.opacity)
             }
-            .padding(.leading)
-            .padding(.top, 8)
-        }
-        .overlay(alignment: .topTrailing) {
-            Button { showSettings = true } label: {
-                Image(systemName: "textformat.size")
-                    .font(.body.weight(.semibold))
-                    .padding(10)
-                    .background(.ultraThinMaterial, in: Circle())
-            }
-            .padding(.trailing)
-            .padding(.top, 8)
         }
         .sheet(isPresented: $showSettings) {
             ReaderSettingsSheet()
         }
         .task {
             await viewModel.load(book: book, fileStorage: FileStorageService(), context: modelContext)
+            showControlsAndScheduleHide()
         }
         .onDisappear {
+            hideControlsTask?.cancel()
             viewModel.flushProgress(context: modelContext)
         }
     }
 
-    // TODO: заменить на полные контролы в Phase 2.6
-    private var chapterNavBar: some View {
-        HStack {
-            Button("← Назад") { viewModel.goToPreviousChapter() }
-                .disabled(viewModel.currentChapterIndex == 0)
-            Spacer()
-            Text("\(viewModel.currentChapterIndex + 1) / \(viewModel.chapters.count)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Button("Вперёд →") { viewModel.goToNextChapter() }
-                .disabled(viewModel.currentChapterIndex == viewModel.chapters.count - 1)
+    private func toggleControls() {
+        hideControlsTask?.cancel()
+        if controlsVisible {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                controlsVisible = false
+            }
+        } else {
+            showControlsAndScheduleHide()
         }
-        .padding()
+    }
+
+    private func showControlsAndScheduleHide() {
+        hideControlsTask?.cancel()
+        withAnimation(.easeInOut(duration: 0.2)) {
+            controlsVisible = true
+        }
+        hideControlsTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                controlsVisible = false
+            }
+        }
     }
 }
