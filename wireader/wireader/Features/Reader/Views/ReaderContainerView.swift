@@ -20,11 +20,13 @@ struct ReaderContainerView: View {
     @AppStorage("lineSpacing") private var lineSpacing: Double = 1.4
     @AppStorage("readerMargins") private var readerMargins: Double = 16
     @AppStorage("readerFontName") private var readerFontName: String = "system"
+    @AppStorage("readingMode") private var readingModeRawValue: String = ReaderReadingMode.scroll.rawValue
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         let theme = ReaderTheme.theme(for: selectedThemeId)
+        let readingMode = ReaderReadingMode(storedValue: readingModeRawValue)
         let textStyle = TextReaderStyle(
             bodyFontSize: CGFloat(fontSize),
             titleFontSize: CGFloat(fontSize + 5),
@@ -59,6 +61,7 @@ struct ReaderContainerView: View {
                         chapterIndex: viewModel.currentChapterIndex,
                         scrollPosition: viewModel.positionInChapter,
                         restoreToken: viewModel.restoreToken,
+                        readingMode: readingMode,
                         theme: theme,
                         onProgressUpdate: { position in
                             viewModel.onScrollProgress(position, context: modelContext)
@@ -89,6 +92,7 @@ struct ReaderContainerView: View {
                         chapterIndex: viewModel.currentChapterIndex,
                         scrollPosition: viewModel.positionInChapter,
                         restoreToken: viewModel.restoreToken,
+                        readingMode: readingMode,
                         style: textStyle,
                         theme: theme,
                         onProgressUpdate: { position in
@@ -171,7 +175,7 @@ struct ReaderContainerView: View {
             }
         }
         .sheet(isPresented: $showSettings) {
-            ReaderSettingsSheet()
+            ReaderSettingsSheet(supportsPagingMode: false)
         }
         .sheet(isPresented: $showTableOfContents) {
             TableOfContentsView(viewModel: viewModel)

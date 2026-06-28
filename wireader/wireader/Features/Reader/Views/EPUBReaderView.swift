@@ -8,6 +8,7 @@ struct EPUBReaderView: UIViewRepresentable {
     let chapterIndex: Int
     let scrollPosition: Double
     let restoreToken: Int
+    let readingMode: ReaderReadingMode
     let theme: ReaderTheme
     var onProgressUpdate: (Double) -> Void = { _ in }
     var onWebViewReady: (WKWebView) -> Void = { _ in }

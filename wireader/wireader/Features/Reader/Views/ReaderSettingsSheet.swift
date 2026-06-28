@@ -1,15 +1,29 @@
 import SwiftUI
 
 struct ReaderSettingsSheet: View {
+    let supportsPagingMode: Bool
+
     @AppStorage("fontSize") private var fontSize: Double = 18
     @AppStorage("lineSpacing") private var lineSpacing: Double = 1.4
     @AppStorage("readerMargins") private var readerMargins: Double = 16
     @AppStorage("readerFontName") private var readerFontName: String = "system"
     @AppStorage("selectedThemeId") private var selectedThemeId: String = "light"
+    @AppStorage("readingMode") private var readingModeRawValue: String = ReaderReadingMode.scroll.rawValue
 
     var body: some View {
         NavigationStack {
             Form {
+                if supportsPagingMode {
+                    Section("Режим чтения") {
+                        Picker("Режим", selection: readingModeBinding) {
+                            ForEach(ReaderReadingMode.allCases) { mode in
+                                Text(mode.displayName).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                }
+
                 Section("Тема") {
                     ForEach(ReaderTheme.all) { theme in
                         Button {
@@ -68,6 +82,13 @@ struct ReaderSettingsSheet: View {
             .navigationTitle("Настройки чтения")
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+
+    private var readingModeBinding: Binding<ReaderReadingMode> {
+        Binding(
+            get: { ReaderReadingMode(storedValue: readingModeRawValue) },
+            set: { readingModeRawValue = $0.rawValue }
+        )
     }
 }
 

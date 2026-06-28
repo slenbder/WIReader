@@ -35,6 +35,7 @@ struct TextReaderView: UIViewRepresentable {
     let chapterIndex: Int
     let scrollPosition: Double
     let restoreToken: Int
+    let readingMode: ReaderReadingMode
     var style: TextReaderStyle = TextReaderStyle()
     let theme: ReaderTheme
     var onProgressUpdate: (Double) -> Bool
