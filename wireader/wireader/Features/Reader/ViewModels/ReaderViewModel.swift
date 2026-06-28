@@ -17,6 +17,7 @@ final class ReaderViewModel {
     var positionInChapter: Double = 0.0
     var overallProgress: Double = 0.0
     var bookmarks: [Bookmark] = []
+    var notes: [Note] = []
     private(set) var restoreToken: Int = 0
 
     private(set) var webView: WKWebView?
@@ -25,6 +26,7 @@ final class ReaderViewModel {
     private var pendingScrollPosition: Double?
     private let progressRepo = ProgressRepository()
     private let bookmarkRepo = BookmarkRepository()
+    private let noteRepo = NoteRepository()
 
     var currentChapter: BookChapter? {
         guard !chapters.isEmpty else { return nil }
@@ -50,6 +52,7 @@ final class ReaderViewModel {
                 restoreToken += 1
                 chapters = []
                 bookmarks = bookmarkRepo.fetch(bookId: book.id, context: context)
+                notes = noteRepo.fetch(bookId: book.id, context: context)
                 tempDir = nil
                 pdfURL = fileURL
                 return
@@ -84,6 +87,7 @@ final class ReaderViewModel {
             restoreToken += 1
             chapters = parsed.chapters
             bookmarks = bookmarkRepo.fetch(bookId: book.id, context: context)
+            notes = noteRepo.fetch(bookId: book.id, context: context)
             tempDir = parsed.tempDir
             pdfURL = nil
         } catch {
@@ -109,6 +113,13 @@ final class ReaderViewModel {
         goToPosition(
             chapterIndex: bookmark.chapterIndex,
             positionInChapter: bookmark.positionInChapter
+        )
+    }
+
+    func goToNote(_ note: Note) {
+        goToPosition(
+            chapterIndex: note.chapterIndex,
+            positionInChapter: note.positionInChapter
         )
     }
 
@@ -219,6 +230,55 @@ final class ReaderViewModel {
         guard let book else { return }
         try? bookmarkRepo.delete(bookmark, from: book, context: context)
         loadBookmarks(context: context)
+    }
+
+    func loadNotes(context: ModelContext) {
+        guard let book else { return }
+        notes = noteRepo.fetch(bookId: book.id, context: context)
+    }
+
+    @discardableResult
+    func addNote(
+        selectedText: String,
+        noteText: String,
+        chapterIndex: Int,
+        positionInChapter: Double,
+        context: ModelContext
+    ) -> Bool {
+        guard let book else { return false }
+        let selected = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let note = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !selected.isEmpty, !note.isEmpty else { return false }
+        do {
+            try noteRepo.add(
+                book: book,
+                chapterIndex: chapterIndex,
+                positionInChapter: positionInChapter,
+                selectedText: selected,
+                noteText: note,
+                context: context
+            )
+            loadNotes(context: context)
+            return true
+        } catch {
+            context.rollback()
+            AppLogger.reader.error("Add note failed: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
+    }
+
+    @discardableResult
+    func deleteNote(_ note: Note, context: ModelContext) -> Bool {
+        guard let book else { return false }
+        do {
+            try noteRepo.delete(note, from: book, context: context)
+            loadNotes(context: context)
+            return true
+        } catch {
+            context.rollback()
+            AppLogger.reader.error("Delete note failed: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
     }
 
     private var progressUnitCount: Int {

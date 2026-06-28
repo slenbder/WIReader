@@ -5,6 +5,7 @@ import OSLog
 struct EPUBReaderView: UIViewRepresentable {
     let chapterURL: URL
     let allowedDir: URL
+    let chapterIndex: Int
     let scrollPosition: Double
     let restoreToken: Int
     let theme: ReaderTheme
@@ -12,10 +13,12 @@ struct EPUBReaderView: UIViewRepresentable {
     var onWebViewReady: (WKWebView) -> Void = { _ in }
     var onPageLoaded: () -> Void = {}
     var onTap: () -> Void = {}
+    var onSelectionChange: (ReaderTextSelection?) -> Void = { _ in }
 
     func makeUIView(context: Context) -> WKWebView {
         let userController = WKUserContentController()
         userController.add(WeakScriptHandler(context.coordinator), name: "scrollProgress")
+        userController.add(WeakScriptHandler(context.coordinator), name: "readerSelection")
 
         let config = WKWebViewConfiguration()
         config.userContentController = userController
@@ -25,6 +28,8 @@ struct EPUBReaderView: UIViewRepresentable {
         context.coordinator.onProgressUpdate = onProgressUpdate
         context.coordinator.onPageLoaded = onPageLoaded
         context.coordinator.onTap = onTap
+        context.coordinator.onSelectionChange = onSelectionChange
+        context.coordinator.chapterIndex = chapterIndex
         context.coordinator.webView = webView
         onWebViewReady(webView)
         return webView
@@ -34,6 +39,8 @@ struct EPUBReaderView: UIViewRepresentable {
         context.coordinator.onProgressUpdate = onProgressUpdate
         context.coordinator.onPageLoaded = onPageLoaded
         context.coordinator.onTap = onTap
+        context.coordinator.onSelectionChange = onSelectionChange
+        context.coordinator.chapterIndex = chapterIndex
         context.coordinator.theme = theme
         let tokenChanged = context.coordinator.lastRestoreToken != restoreToken
         if context.coordinator.lastThemeId != theme.id {
@@ -47,6 +54,7 @@ struct EPUBReaderView: UIViewRepresentable {
             return
         }
         context.coordinator.lastLoadedURL = chapterURL
+        context.coordinator.chapterIndicesByURL[chapterURL.standardizedFileURL] = chapterIndex
         context.coordinator.lastRestoreToken = restoreToken
         context.coordinator.isFirstRestore = true
         webView.alpha = 0
@@ -57,13 +65,21 @@ struct EPUBReaderView: UIViewRepresentable {
         Coordinator()
     }
 
+    static func dismantleUIView(_ webView: WKWebView, coordinator: Coordinator) {
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "scrollProgress")
+        webView.configuration.userContentController.removeScriptMessageHandler(forName: "readerSelection")
+    }
+
     // MARK: - Coordinator
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var lastLoadedURL: URL?
+        var chapterIndicesByURL: [URL: Int] = [:]
         var onProgressUpdate: (Double) -> Void = { _ in }
         var onPageLoaded: () -> Void = {}
         var onTap: () -> Void = {}
+        var onSelectionChange: (ReaderTextSelection?) -> Void = { _ in }
+        var chapterIndex: Int = 0
         var isFirstRestore: Bool = true
         weak var webView: WKWebView?
         var theme: ReaderTheme = .light
@@ -77,6 +93,8 @@ struct EPUBReaderView: UIViewRepresentable {
             // in rapid succession. Do NOT deduplicate or skip reapply without a
             // compensating mechanism — e.g. waiting for scrollHeight to stabilise —
             // or EPUB restore will regress to pre-Fix-B behaviour (sh=195 drift).
+            let loadedURL = webView.url?.standardizedFileURL
+            let selectionChapterIndex = loadedURL.flatMap { chapterIndicesByURL[$0] } ?? chapterIndex
             let js = """
             (function() {
                 window.wireaderApplyTheme = function(css) {
@@ -136,6 +154,44 @@ struct EPUBReaderView: UIViewRepresentable {
 
                     document.addEventListener('click', function() {
                         window.wireaderPostTap();
+                    }, { capture: true, passive: true });
+                }
+
+                if (!window.wireaderSelectionListenerInstalled) {
+                    window.wireaderSelectionListenerInstalled = true;
+                    window.wireaderSelectionTimer = null;
+
+                    window.wireaderPostSelection = function() {
+                        var selection = window.getSelection();
+                        var selectedText = selection ? selection.toString().trim() : '';
+                        if (!selection || selection.rangeCount === 0 || selectedText.length === 0) {
+                            window.webkit.messageHandlers.readerSelection.postMessage({
+                                selectedText: '',
+                                chapterIndex: \(selectionChapterIndex),
+                                positionInChapter: 0
+                            });
+                            return;
+                        }
+
+                        var range = selection.getRangeAt(0);
+                        var rect = range.getBoundingClientRect();
+                        var maxY = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+                        var position = Math.min(Math.max((rect.top + window.scrollY) / maxY, 0), 1);
+                        window.webkit.messageHandlers.readerSelection.postMessage({
+                            selectedText: selectedText,
+                            chapterIndex: \(selectionChapterIndex),
+                            positionInChapter: position
+                        });
+                    };
+
+                    window.wireaderScheduleSelectionPost = function() {
+                        clearTimeout(window.wireaderSelectionTimer);
+                        window.wireaderSelectionTimer = setTimeout(window.wireaderPostSelection, 120);
+                    };
+
+                    document.addEventListener('selectionchange', window.wireaderScheduleSelectionPost);
+                    document.addEventListener('touchend', function() {
+                        setTimeout(window.wireaderPostSelection, 250);
                     }, { capture: true, passive: true });
                 }
 
@@ -202,6 +258,11 @@ struct EPUBReaderView: UIViewRepresentable {
             _ userContentController: WKUserContentController,
             didReceive message: WKScriptMessage
         ) {
+            if message.name == "readerSelection" {
+                handleSelectionMessage(message.body)
+                return
+            }
+
             guard message.name == "scrollProgress" else { return }
             if let position = message.body as? Double {
                 onProgressUpdate(position)
@@ -216,6 +277,25 @@ struct EPUBReaderView: UIViewRepresentable {
                     }
                 }
             }
+        }
+
+        private func handleSelectionMessage(_ body: Any) {
+            guard let payload = body as? [String: Any],
+                  let selectedText = payload["selectedText"] as? String,
+                  !selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  let chapterIndex = (payload["chapterIndex"] as? NSNumber)?.intValue,
+                  let position = payload["positionInChapter"] as? Double
+            else {
+                onSelectionChange(nil)
+                return
+            }
+
+            let selection = ReaderTextSelection(
+                selectedText: selectedText,
+                chapterIndex: chapterIndex,
+                positionInChapter: position
+            )
+            onSelectionChange(selection.isValid ? selection : nil)
         }
     }
 

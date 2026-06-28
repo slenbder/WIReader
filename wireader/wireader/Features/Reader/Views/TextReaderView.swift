@@ -32,6 +32,7 @@ final class PositionRestoringTextView: UITextView {
 struct TextReaderView: UIViewRepresentable {
     let text: String
     let chapterTitle: String?
+    let chapterIndex: Int
     let scrollPosition: Double
     let restoreToken: Int
     var style: TextReaderStyle = TextReaderStyle()
@@ -39,6 +40,7 @@ struct TextReaderView: UIViewRepresentable {
     var onProgressUpdate: (Double) -> Bool
     var onFlushProgress: () -> Void
     var onTap: () -> Void = {}
+    var onCreateNoteFromSelection: (ReaderTextSelection) -> Void = { _ in }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onProgressUpdate: onProgressUpdate, onFlushProgress: onFlushProgress)
@@ -71,6 +73,8 @@ struct TextReaderView: UIViewRepresentable {
         context.coordinator.onProgressUpdate = onProgressUpdate
         context.coordinator.onFlushProgress = onFlushProgress
         context.coordinator.onTap = onTap
+        context.coordinator.onCreateNoteFromSelection = onCreateNoteFromSelection
+        context.coordinator.chapterIndex = chapterIndex
 
         let textChanged = context.coordinator.lastText != text
         let tokenChanged = context.coordinator.lastRestoreToken != restoreToken
@@ -209,6 +213,8 @@ extension TextReaderView {
         var onProgressUpdate: (Double) -> Bool
         var onFlushProgress: () -> Void
         var onTap: () -> Void = {}
+        var onCreateNoteFromSelection: (ReaderTextSelection) -> Void = { _ in }
+        var chapterIndex: Int = 0
         var lastText: String?
         var lastRestoreToken: Int = -1
         var lastThemeId: String?
@@ -279,7 +285,64 @@ extension TextReaderView {
             _ = onProgressUpdate(position)
         }
 
+        func textView(
+            _ textView: UITextView,
+            editMenuForTextIn range: NSRange,
+            suggestedActions: [UIMenuElement]
+        ) -> UIMenu? {
+            guard range.length > 0 else {
+                return UIMenu(children: suggestedActions)
+            }
+
+            let noteAction = UIAction(title: "Заметка", image: UIImage(systemName: "note.text")) { [weak self, weak textView] _ in
+                guard let self, let textView else { return }
+                self.createNoteFromSelection(in: textView)
+            }
+            return UIMenu(children: suggestedActions + [noteAction])
+        }
+
         private func currentPosition(in textView: UITextView) -> Double {
+            let totalH = totalContentHeight(in: textView)
+            let maxH = max(totalH - textView.bounds.height, 1)
+            return min(max(textView.contentOffset.y / maxH, 0), 1)
+        }
+
+        private func createNoteFromSelection(in textView: UITextView) {
+            let range = textView.selectedRange
+            guard range.length > 0,
+                  let text = textView.attributedText?.string,
+                  NSMaxRange(range) <= text.utf16.count
+            else { return }
+
+            let source = text as NSString
+            let selectedText = source.substring(with: range)
+            let position = selectionPosition(in: textView, range: range)
+            let selection = ReaderTextSelection(
+                selectedText: selectedText,
+                chapterIndex: chapterIndex,
+                positionInChapter: position
+            )
+            guard selection.isValid else { return }
+            onCreateNoteFromSelection(selection)
+        }
+
+        private func selectionPosition(in textView: UITextView, range: NSRange) -> Double {
+            guard let start = textView.position(from: textView.beginningOfDocument, offset: range.location),
+                  let end = textView.position(from: start, offset: max(range.length, 1)),
+                  let textRange = textView.textRange(from: start, to: end)
+            else {
+                return currentPosition(in: textView)
+            }
+
+            let rect = textView.firstRect(for: textRange)
+            guard !rect.isNull, !rect.isInfinite, !rect.isEmpty else {
+                return currentPosition(in: textView)
+            }
+
+            return positionForContentY(rect.minY, in: textView)
+        }
+
+        private func totalContentHeight(in textView: UITextView) -> CGFloat {
             let totalH: CGFloat
             if let tlm = textView.textLayoutManager,
                let doc = tlm.textContentManager?.documentRange {
@@ -289,8 +352,14 @@ extension TextReaderView {
             } else {
                 totalH = textView.contentSize.height
             }
-            let maxH = max(totalH - textView.bounds.height, 1)
-            return min(max(textView.contentOffset.y / maxH, 0), 1)
+            return totalH
+        }
+
+        private func positionForContentY(_ contentY: CGFloat, in textView: UITextView) -> Double {
+            let totalH = totalContentHeight(in: textView)
+            let maxY = max(totalH - textView.bounds.height, 1)
+            let contentOffsetY = contentY - textView.textContainerInset.top
+            return min(max(contentOffsetY / maxY, 0), 1)
         }
 
         func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {

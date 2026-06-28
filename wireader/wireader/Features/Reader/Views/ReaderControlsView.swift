@@ -8,6 +8,7 @@ struct ReaderControlsView: View {
     let showTableOfContents: () -> Void
     let addBookmark: () -> Void
     let showBookmarks: () -> Void
+    let showNotes: () -> Void
     let onInteraction: () -> Void
 
     var body: some View {
@@ -33,7 +34,7 @@ struct ReaderControlsView: View {
                 .disabled(viewModel.chapters.isEmpty)
             controlButton(systemName: "bookmark", action: addBookmark)
             controlButton(systemName: "bookmark.fill", action: showBookmarks)
-            controlButton(systemName: "note.text", action: {})
+            controlButton(systemName: "note.text", action: showNotes)
             controlButton(systemName: "textformat.size", action: showSettings)
         }
         .padding(.horizontal, 14)

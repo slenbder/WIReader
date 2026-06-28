@@ -253,7 +253,7 @@
 **Готово когда:** закладки создаются, переход работает, синхронизируются между устройствами.
 **Проверено:** BookmarkRepository added, BookmarksPanelView implemented, and ReaderControlsView bookmark button connected. Positional bookmarks use `chapterIndex + positionInChapter`, not chapter-only navigation. `ReaderViewModel.goToPosition(chapterIndex:positionInChapter:)` added as the canonical positional navigation primitive; `goToChapter` remains chapter-start navigation while bookmarks use `goToPosition`. EPUB/Text live bookmark navigation fixed by moving live restore handling into renderer update paths. PDF bookmarks verified working. Build succeeded. `/review` found no blocking issues. Manual simulator verification passed for EPUB, TXT, FB2, and PDF behavior.
 
-### [ ] 2.9 — Заметки
+### [x] 2.9 — Заметки
 **Что делаем:** заметки с привязкой к выделенному тексту.
 **Файлы:** `NotesPanelView.swift`, обновление контекстного меню
 **Требования:**
@@ -262,6 +262,7 @@
 - Список заметок → тап → переход
 - Сохранение в SwiftData (синхронизируется)
 **Готово когда:** заметка создаётся из выделения, отображается в списке, переход работает.
+**Проверено:** NoteRepository, ReaderTextSelection, and NotesPanelView added; ReaderControlsView notes button connected. Notes persist canonical `chapterIndex + positionInChapter` and navigate via `goToPosition(chapterIndex:positionInChapter:)`. TXT/FB2 use the native text-selection menu; EPUB uses a safe MVP selection overlay/action; PDF note creation is deferred. The selected-text presentation race was fixed with `sheet(item:)` and an immutable selection payload. TXT/FB2 selection position mapping was corrected. Stale EPUB selections are prevented by carrying `chapterIndex` in ReaderTextSelection and filtering callbacks from non-current chapters. Note add/delete failures are logged, rolled back, surfaced to the user, and no longer treated as success. Build succeeded, `git diff --check` passed, and `/review` found no High or Medium issues after fixes. Manual simulator verification passed for EPUB, TXT, FB2, and unchanged PDF behavior.
 
 ### [ ] 2.10 — Постраничный режим (EPUB + TXT/FB2)
 **Что делаем:** горизонтальное постраничное перелистывание как альтернатива вертикальному скроллу. Переключение режима — настройка ридера (@AppStorage).

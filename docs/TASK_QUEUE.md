@@ -1,6 +1,6 @@
 # Task Queue
 
-> Last updated: 2026-06-25
+> Last updated: 2026-06-28
 > Full task details: docs/TASK_BREAKDOWN.md
 > Current project state: docs/PROJECT_STATE.md
 
@@ -41,7 +41,6 @@ Do not skip tasks — earlier tasks have dependencies that later ones assume are
 
 | Task | Status | Complexity | Depends On | Notes |
 |------|--------|------------|------------|-------|
-| 2.9 Notes | Todo | Low | 2.8 | Current next task. Text selection → note with position binding. List, navigate, delete. Synced. |
 | 4.4 ActivityGridView | Todo | Medium | 4.2 | GitHub-style heatmap, year/month view. |
 | 4.5 GoalsView + Streaks | Todo | Medium | 4.2 | Annual goal (books/pages/minutes), daily streak, personal challenges. |
 | 5.2 Sign in with Apple | Todo | Low | 5.1 | AccountView in Settings only. Keychain credential storage. No effect on sync. |
@@ -58,6 +57,7 @@ Recent completion:
 
 | Task | Status | Complexity | Depends On | Notes |
 |------|--------|------------|------------|-------|
+| 2.9 Notes | Done | Low | 2.8 | Positional notes use `chapterIndex + positionInChapter` and navigate through `goToPosition`. TXT/FB2 use the native selection menu; EPUB uses an accepted safe MVP overlay; PDF creation is deferred. Persistence failure handling and stale EPUB selection filtering are implemented. Build and `git diff --check` passed; manual verification passed; `/review` found no High/Medium issues. |
 | 2.8 Bookmarks | Done | Low | 2.6 | Positional bookmarks implemented with `chapterIndex + positionInChapter`, BookmarkRepository, BookmarksPanelView, add/list/navigate/delete, and `goToPosition` as canonical positional navigation. EPUB/Text live navigation fixed; PDF bookmarks verified. Build succeeded; manual EPUB/TXT/FB2/PDF verification passed; `/review` found no blocking issues. |
 | 2.7 TableOfContentsView | Done | Low | 2.6 | TableOfContentsView opens from ReaderControlsView, lists ReaderViewModel chapters, highlights current chapter, jumps via `goToChapter(index)`, and dismisses. PDF TOC button remains visible but disabled. Build succeeded; manual EPUB/TXT/FB2/PDF verification passed; `/review` found no blocking issues. |
 | 2.6 ReaderControlsView | Done | Medium | 2.5 | Top/bottom reader controls with auto-hide implemented. EPUB tap bridge fixed. Manual simulator verification passed for EPUB/TXT/FB2/PDF. `/review` found no blocking issues. |

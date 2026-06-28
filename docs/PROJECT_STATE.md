@@ -1,6 +1,6 @@
 # Project State
 
-> Last updated: 2026-06-25
+> Last updated: 2026-06-28
 > Branch: main
 > Canonical docs: docs/ (see docs/DOCUMENTATION_POLICY.md)
 > Original archived docs: wireader/docs/ — do not use as active source of truth
@@ -20,7 +20,7 @@ Pre-release. No App Store submission yet.
 
 ## Last Completed Task
 
-Phase 2.8 — Bookmarks
+Phase 2.9 — Notes
 
 ---
 
@@ -53,13 +53,13 @@ Phase 2.8 — Bookmarks
 - ✅ 2.6 ReaderControlsView (top/bottom bars, auto-hide, EPUB tap bridge)
 - ✅ 2.7 TableOfContentsView (chapter list, current chapter highlight, chapter jump, PDF disabled state)
 - ✅ 2.8 Bookmarks (positional bookmarks with SwiftData sync, list, navigation, delete)
+- ✅ 2.9 Notes (positional selected-text notes with SwiftData sync, list, navigation, delete)
 
 ---
 
 ## Features In Progress
 
 ### Phase 2 — Full Reading Experience (remaining)
-- 🚧 2.9 Notes (with text selection)
 - 🚧 2.10 Paging mode (horizontal page-flip for EPUB + TXT/FB2) — complex
 - 🚧 2.11 Reader UI Polish Pass
 - 🚧 2.12 Auto-scroll + auto-page-flip
@@ -104,12 +104,13 @@ Phase 2.8 — Bookmarks
 - `BookImportService` — TXT/FB2/PDF import paths are stubs from Phase 1. Now replaced by real parsers (2.1), but verify integration is complete.
 - `EPUBParser` currently treats spine HTML files as app-level chapters. Some EPUB files contain multiple human-visible book chapters inside one spine item, so app-level TOC entries may not always match visible book headings. Future parser refinement may need NAV/NCX anchor mapping or heading-based subchapter splitting.
 - Bookmark precision is based on relative `positionInChapter`. After future paging mode, page number must remain derived from `positionInChapter` and must not be stored as canonical state.
+- EPUB note creation currently uses a safe selection overlay/action, while TXT/FB2 use the native selection menu. During Reader UI Polish Pass or before release, evaluate a native-like EPUB selection-menu action only if it preserves selection, tap-to-toggle, progress, restore, and per-`didFinish` reapply behavior.
 
 ---
 
 ## Current Focus
 
-Phase 2.9 — Notes.
+Phase 2.10 — Paging mode.
 
 ## Manual Verification Notes
 
@@ -119,6 +120,7 @@ Phase 2.9 — Notes.
 - Phase 2.6 ReaderControlsView: ReaderControlsView implemented with top/bottom bars and auto-hide behavior. EPUB tap bridge was fixed so taps in WKWebView toggle controls correctly. Manual simulator verification passed for EPUB, TXT, FB2, and PDF. `/review` found no blocking issues.
 - Phase 2.7 TableOfContentsView: TableOfContentsView implemented and opened from the ReaderControlsView TOC button. It lists chapters from ReaderViewModel, highlights the current chapter with accent color, semibold text, and checkmark, and selecting a chapter calls `goToChapter(index)` and dismisses the sheet. PDF keeps the TOC button visible but disabled. Build succeeded. `/review` found no blocking issues. Manual simulator verification passed: EPUB TOC opens, highlights the current chapter, jumps correctly, and dismisses; TXT/FB2 TOC flow works correctly; PDF TOC button remains visible but disabled.
 - Phase 2.8 Bookmarks: BookmarkRepository added, BookmarksPanelView implemented, and ReaderControlsView bookmark button connected. Positional bookmarks use `chapterIndex + positionInChapter`, not chapter-only navigation. `ReaderViewModel.goToPosition(chapterIndex:positionInChapter:)` was added as the canonical positional navigation primitive; `goToChapter` remains chapter-start navigation while bookmarks use `goToPosition`. EPUB/Text live bookmark navigation was fixed by moving live restore handling into renderer update paths. PDF bookmarks verified working. Build succeeded. `/review` found no blocking issues. Manual simulator verification passed for EPUB/TXT/FB2/PDF: EPUB/TXT/FB2 create positional bookmarks, multiple same-chapter bookmarks restore accurately, same-chapter jumps no longer blank the reader, cross-chapter jumps work, controls remain usable, EPUB tap-to-toggle still works, and PDF jumps are immediate and accurate.
+- Phase 2.9 Notes: NoteRepository, ReaderTextSelection, and NotesPanelView added; the ReaderControlsView notes button is connected. Notes persist `chapterIndex + positionInChapter` and navigate through `goToPosition(chapterIndex:positionInChapter:)`. TXT/FB2 creation uses the native text-selection menu; EPUB uses the accepted safe MVP overlay/action; PDF note creation is deferred. The selected-text presentation race was fixed with `sheet(item:)` and an immutable selection payload, TXT/FB2 selection positioning was corrected, and stale EPUB chapter selections were fixed by snapshotting `chapterIndex` and filtering stale callbacks. Note persistence failures now report failure instead of dismissing or deleting as if successful. Build succeeded, `git diff --check` passed, and `/review` found no High or Medium issues after fixes. Manual simulator verification passed for TXT/FB2 creation, immediate selected text, positional navigation across multiple notes, and deletion; EPUB creation, MVP navigation, and tap-to-toggle; and unchanged PDF behavior with creation deferred.
 
 ## Next Milestone
 
