@@ -34,6 +34,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		4F2E57022FF1E07E0074D75C /* Exceptions for "docs" folder in "wireaderUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				design/00_ProductManifesto.md,
+			);
+			target = 4F55B4002FD7761500FE3611 /* wireaderUITests */;
+		};
 		4F55B50C2FD7814000FE3611 /* Exceptions for "wireader" folder in "wireader" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -42,6 +49,16 @@
 			target = 4F55B3E72FD7761400FE3611 /* wireader */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		4F2E57032FF1E07E0074D75C /* Exceptions for "docs" folder in "Compile Sources" phase from "wireaderUITests" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 4F55B3FD2FD7761500FE3611 /* Sources */;
+			membershipExceptions = (
+				design/00_ProductManifesto.md,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4F55B3EA2FD7761400FE3611 /* wireader */ = {
@@ -64,6 +81,10 @@
 		};
 		4F55B4192FD7778900FE3611 /* docs */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				4F2E57022FF1E07E0074D75C /* Exceptions for "docs" folder in "wireaderUITests" target */,
+				4F2E57032FF1E07E0074D75C /* Exceptions for "docs" folder in "Compile Sources" phase from "wireaderUITests" target */,
+			);
 			path = docs;
 			sourceTree = "<group>";
 		};
