@@ -161,14 +161,27 @@ final class ReaderViewModel {
         webView = wv
     }
 
-    func applyPendingScroll() {
+    func prepareEPUBModeSwitch() {
+        pendingScrollPosition = positionInChapter
+    }
+
+    func applyPendingEPUBPosition() {
         guard let wv = webView, let pos = pendingScrollPosition else { return }
         // pendingScrollPosition kept set so window.load can re-apply after images load.
         // Cleared on chapter navigation (goTo* methods) to prevent stale re-apply.
-        let js = "window.scrollTo(0,(document.body.scrollHeight-window.innerHeight)*\(pos));"
+        let js = "window.wireaderRestorePosition && window.wireaderRestorePosition(\(pos));"
         wv.evaluateJavaScript(js) { _, error in
-            if let error { AppLogger.reader.error("applyPendingScroll JS: \(error.localizedDescription, privacy: .public)") }
+            if let error { AppLogger.reader.error("applyPendingEPUBPosition JS: \(error.localizedDescription, privacy: .public)") }
         }
+    }
+
+    func onEPUBPageSettled(_ position: Double, context: ModelContext) {
+        let clampedPosition = min(max(position, 0.0), 1.0)
+        // A completed user page flip is a discrete restore target, not a live mirror:
+        // intermediate horizontal movement never mutates pendingScrollPosition.
+        pendingScrollPosition = clampedPosition
+        _ = onScrollProgress(clampedPosition, context: context)
+        flushProgress(context: context)
     }
 
     /// Returns true when the position was actually persisted to SwiftData (throttle passed).

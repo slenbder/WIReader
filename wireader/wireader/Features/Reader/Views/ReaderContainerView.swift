@@ -27,6 +27,7 @@ struct ReaderContainerView: View {
     var body: some View {
         let theme = ReaderTheme.theme(for: selectedThemeId)
         let readingMode = ReaderReadingMode(storedValue: readingModeRawValue)
+        let supportsPagingMode = book.format == "epub"
         let textStyle = TextReaderStyle(
             bodyFontSize: CGFloat(fontSize),
             titleFontSize: CGFloat(fontSize + 5),
@@ -61,7 +62,7 @@ struct ReaderContainerView: View {
                         chapterIndex: viewModel.currentChapterIndex,
                         scrollPosition: viewModel.positionInChapter,
                         restoreToken: viewModel.restoreToken,
-                        readingMode: readingMode,
+                        readingMode: supportsPagingMode ? readingMode : .scroll,
                         theme: theme,
                         onProgressUpdate: { position in
                             viewModel.onScrollProgress(position, context: modelContext)
@@ -70,7 +71,10 @@ struct ReaderContainerView: View {
                             viewModel.setWebView(wv)
                         },
                         onPageLoaded: {
-                            viewModel.applyPendingScroll()
+                            viewModel.applyPendingEPUBPosition()
+                        },
+                        onPageSettled: { position in
+                            viewModel.onEPUBPageSettled(position, context: modelContext)
                         },
                         onTap: {
                             toggleControls()
@@ -92,7 +96,7 @@ struct ReaderContainerView: View {
                         chapterIndex: viewModel.currentChapterIndex,
                         scrollPosition: viewModel.positionInChapter,
                         restoreToken: viewModel.restoreToken,
-                        readingMode: readingMode,
+                        readingMode: .scroll,
                         style: textStyle,
                         theme: theme,
                         onProgressUpdate: { position in
@@ -175,7 +179,7 @@ struct ReaderContainerView: View {
             }
         }
         .sheet(isPresented: $showSettings) {
-            ReaderSettingsSheet(supportsPagingMode: false)
+            ReaderSettingsSheet(supportsPagingMode: supportsPagingMode)
         }
         .sheet(isPresented: $showTableOfContents) {
             TableOfContentsView(viewModel: viewModel)
@@ -225,6 +229,10 @@ struct ReaderContainerView: View {
             else { return }
             pendingSelection = nil
             showEPUBNoteAction = false
+        }
+        .onChange(of: readingModeRawValue) { _, _ in
+            guard book.format == "epub" else { return }
+            viewModel.prepareEPUBModeSwitch()
         }
         .onDisappear {
             hideControlsTask?.cancel()
